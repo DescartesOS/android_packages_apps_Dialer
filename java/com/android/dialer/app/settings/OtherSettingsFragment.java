@@ -31,7 +31,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.android.dialer.R;
 
-public class OtherSettingsFragment extends PreferenceFragmentCompat
+public class OtherSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener {
 
   private static final String ENABLE_POST_CALL = "enable_post_call";

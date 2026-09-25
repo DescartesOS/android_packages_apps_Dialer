@@ -17,43 +17,18 @@
 
 package com.android.contacts.common.widget;
 
-import android.annotation.SuppressLint;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
-import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
-import android.telecom.TelecomManager;
-import android.telephony.SubscriptionInfo;
-import android.text.TextUtils;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
-import com.android.contacts.common.compat.PhoneAccountCompat;
-import com.android.dialer.R;
-import com.android.dialer.location.GeoUtil;
-import com.android.dialer.phonenumberutil.PhoneNumberHelper;
 import com.android.dialer.protos.ProtoParsers;
-import com.android.dialer.telecom.TelecomUtil;
-
-import java.util.Optional;
 
 /**
  * Dialog that allows the user to select a phone accounts for a given action. Optionally provides
@@ -103,62 +78,25 @@ public class SelectPhoneAccountDialogFragment extends DialogFragment {
     }
     isSelected = false;
 
-    final DialogInterface.OnClickListener selectionListener =
-            (dialog, which) -> {
-              isSelected = true;
-              PhoneAccountHandle selectedAccountHandle =
-                  SelectPhoneAccountDialogOptionsUtil.getPhoneAccountHandle(
-                      options.getEntriesList().get(which));
-              Bundle result = new Bundle();
-              result.putParcelable(
-                  SelectPhoneAccountListener.EXTRA_SELECTED_ACCOUNT_HANDLE, selectedAccountHandle);
-              result.putBoolean(SelectPhoneAccountListener.EXTRA_SET_DEFAULT, isDefaultChecked);
-              result.putString(SelectPhoneAccountListener.EXTRA_CALL_ID, getCallId());
-              if (listener != null) {
-                listener.onReceiveResult(SelectPhoneAccountListener.RESULT_SELECTED, result);
-              }
-            };
-
-    final CompoundButton.OnCheckedChangeListener checkListener =
-            (check, isChecked) -> isDefaultChecked = isChecked;
-
-    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-    ListAdapter selectAccountListAdapter =
-        new SelectAccountListAdapter(
-            builder.getContext(), R.layout.select_account_list_item, options);
-
-    AlertDialog dialog =
-        builder
-            .setTitle(
-                options.hasTitle() ? options.getTitle() : R.string.select_account_dialog_title)
-            .setAdapter(selectAccountListAdapter, selectionListener)
-            .create();
-
-    if (options.getCanSetDefault()) {
-      // Generate custom checkbox view, lint suppressed since no appropriate parent (is dialog)
-      @SuppressLint("InflateParams")
-      LinearLayout checkboxLayout =
-          (LinearLayout)
-              LayoutInflater.from(builder.getContext())
-                  .inflate(R.layout.default_account_checkbox, null);
-
-      CheckBox checkBox = checkboxLayout.findViewById(R.id.default_account_checkbox_view);
-      checkBox.setOnCheckedChangeListener(checkListener);
-      checkBox.setChecked(isDefaultChecked);
-
-      TextView textView = checkboxLayout.findViewById(R.id.default_account_checkbox_text);
-      int setDefaultResId =
-          options.hasSetDefaultLabel()
-              ? options.getSetDefaultLabel()
-              : R.string.set_default_account;
-      textView.setText(setDefaultResId);
-      textView.setOnClickListener((view) -> checkBox.performClick());
-      checkboxLayout.setOnClickListener((view) -> checkBox.performClick());
-      checkboxLayout.setContentDescription(getString(setDefaultResId));
-      dialog.getListView().addFooterView(checkboxLayout);
-    }
-
-    return dialog;
+    return com.android.dialer.expressive.ExpressiveDialogs.createSimPicker(
+        requireContext(), options, isDefaultChecked,
+        checked -> isDefaultChecked = checked,
+        which -> {
+          if (isSelected || !options.getEntries(which).getEnabled()) {
+            return;
+          }
+          isSelected = true;
+          PhoneAccountHandle selectedAccountHandle =
+              SelectPhoneAccountDialogOptionsUtil.getPhoneAccountHandle(options.getEntries(which));
+          Bundle result = new Bundle();
+          result.putParcelable(
+              SelectPhoneAccountListener.EXTRA_SELECTED_ACCOUNT_HANDLE, selectedAccountHandle);
+          result.putBoolean(SelectPhoneAccountListener.EXTRA_SET_DEFAULT, isDefaultChecked);
+          result.putString(SelectPhoneAccountListener.EXTRA_CALL_ID, getCallId());
+          if (listener != null) {
+            listener.onReceiveResult(SelectPhoneAccountListener.RESULT_SELECTED, result);
+          }
+        });
   }
 
   @Override
@@ -207,103 +145,4 @@ public class SelectPhoneAccountDialogFragment extends DialogFragment {
     public void onDialogDismissed(@Nullable String callId) {}
   }
 
-  static class SelectAccountListAdapter
-      extends ArrayAdapter<SelectPhoneAccountDialogOptions.Entry> {
-
-    private final int mResId;
-    private final SelectPhoneAccountDialogOptions options;
-
-    SelectAccountListAdapter(
-        Context context, int resource, SelectPhoneAccountDialogOptions options) {
-      super(context, resource, options.getEntriesList());
-      this.options = options;
-      mResId = resource;
-    }
-
-    @Override
-    public boolean areAllItemsEnabled() {
-      return false;
-    }
-
-    @Override
-    public boolean isEnabled(int position) {
-      return options.getEntries(position).getEnabled();
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-      LayoutInflater inflater =
-          (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-      View rowView;
-      final ViewHolder holder;
-
-      if (convertView == null) {
-        // Cache views for faster scrolling
-        rowView = inflater.inflate(mResId, null);
-        holder = new ViewHolder();
-        holder.labelTextView = (TextView) rowView.findViewById(R.id.label);
-        holder.numberTextView = (TextView) rowView.findViewById(R.id.number);
-        holder.hintTextView = rowView.findViewById(R.id.hint);
-        holder.imageView = (ImageView) rowView.findViewById(R.id.icon);
-        rowView.setTag(holder);
-      } else {
-        rowView = convertView;
-        holder = (ViewHolder) rowView.getTag();
-      }
-
-      SelectPhoneAccountDialogOptions.Entry entry = getItem(position);
-      PhoneAccountHandle accountHandle =
-          SelectPhoneAccountDialogOptionsUtil.getPhoneAccountHandle(entry);
-      PhoneAccount account =
-          getContext().getSystemService(TelecomManager.class).getPhoneAccount(accountHandle);
-      if (account == null) {
-        return rowView;
-      }
-      holder.labelTextView.setText(account.getLabel());
-      if (account.getAddress() == null
-          || TextUtils.isEmpty(account.getAddress().getSchemeSpecificPart())) {
-        holder.numberTextView.setVisibility(View.GONE);
-      } else {
-        holder.numberTextView.setVisibility(View.VISIBLE);
-        holder.numberTextView.setText(
-            PhoneNumberHelper.formatNumberForDisplay(
-                getContext(),
-                account.getAddress().getSchemeSpecificPart(),
-                getCountryIso(getContext(), accountHandle)));
-      }
-      holder.imageView.setImageDrawable(
-          PhoneAccountCompat.createIconDrawable(account, getContext()));
-
-      if (TextUtils.isEmpty(entry.getHint())) {
-        holder.hintTextView.setVisibility(View.GONE);
-      } else {
-        holder.hintTextView.setVisibility(View.VISIBLE);
-        holder.hintTextView.setText(entry.getHint());
-      }
-      holder.labelTextView.setEnabled(entry.getEnabled());
-      holder.numberTextView.setEnabled(entry.getEnabled());
-      holder.hintTextView.setEnabled(entry.getEnabled());
-      holder.imageView.setImageAlpha(entry.getEnabled() ? 255 : 97 /* 38%*/);
-      return rowView;
-    }
-
-    private static String getCountryIso(
-        Context context, @NonNull PhoneAccountHandle phoneAccountHandle) {
-      Optional<SubscriptionInfo> info =
-          TelecomUtil.getSubscriptionInfo(context, phoneAccountHandle);
-      if (!info.isPresent()) {
-        return GeoUtil.getCurrentCountryIso(context);
-      }
-      return info.get().getCountryIso().toUpperCase();
-    }
-
-    static final class ViewHolder {
-
-      TextView labelTextView;
-      TextView numberTextView;
-      TextView hintTextView;
-      ImageView imageView;
-    }
-  }
 }

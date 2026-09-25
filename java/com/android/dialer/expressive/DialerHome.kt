@@ -1,0 +1,387 @@
+/*
+ * Copyright (C) 2024-2026 Lunaris AOSP
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
+package com.android.dialer.expressive
+
+import android.provider.CallLog.Calls
+import android.telephony.PhoneNumberUtils
+import android.text.format.DateUtils
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.InterceptPlatformTextInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.*
+import com.android.dialer.R
+import kotlinx.coroutines.awaitCancellation
+
+@Composable
+fun DialerHome(
+    data: DialerData, loading: Boolean, error: Boolean, tab: Int, query: String, digits: String,
+    keypad: Boolean, onTab: (Int) -> Unit, onQuery: (String) -> Unit, onDigits: (String) -> String,
+    onKeypad: (Boolean) -> Unit, onCall: (String) -> Unit, onVideo: (String) -> Unit, onVoicemail: () -> Unit,
+    onPermissions: () -> Unit, onRetry: () -> Unit, onStar: (Person) -> Unit,
+    onDelete: (List<RecentCall>, (Boolean) -> Unit) -> Unit,
+    onAddContact: (String) -> Unit, onMessage: (String) -> Unit, onSettings: () -> Unit,
+    onCopy: (String) -> Unit, onShare: (String) -> Unit, onEditContact: (Person) -> Unit,
+    onPhoto: (String) -> Unit, onRemovePhoto: (String) -> Unit
+) {
+    val labels = listOf(stringResource(R.string.expressive_recents), stringResource(R.string.expressive_favorites),
+        stringResource(R.string.expressive_contacts), stringResource(R.string.expressive_voicemail))
+    var person by remember { mutableStateOf<Person?>(null) }
+    var recent by remember { mutableStateOf<RecentCallGroup?>(null) }
+    var delete by remember { mutableStateOf<RecentCallGroup?>(null) }
+    var history by remember { mutableStateOf<RecentCall?>(null) }
+    var expandedGroup by rememberSaveable { mutableStateOf<Long?>(null) }
+    var missedOnly by rememberSaveable { mutableStateOf(false) }
+    val contacts = remember(data.people, query, tab) {
+        data.people.filter { (tab != 1 || it.starred) && matches(it.name, it.number, query) }
+    }
+    val groups = remember(data.recentGroups, query, missedOnly) {
+        data.recentGroups.filter { group ->
+            group.calls.any { (!missedOnly || it.type == Calls.MISSED_TYPE) && matches(it.name, it.number, query) }
+        }
+    }
+    Scaffold(containerColor = MaterialTheme.colorScheme.surface,
+        contentWindowInsets = WindowInsets.safeDrawing,
+        bottomBar = {
+            Box(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 16.dp, vertical = 12.dp), Alignment.Center) {
+                FloatingDialerBar(tab, labels, onTab)
+            }
+        }, floatingActionButton = {
+            ExpressiveTile(onClick = { onKeypad(true) }, color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary) {
+                Symbol(DialerSymbol.Keypad)
+                Text(stringResource(R.string.expressive_keypad), Modifier.padding(start = 10.dp), fontWeight = FontWeight.Bold)
+            }
+        }) { padding ->
+        val direction = LocalLayoutDirection.current
+        val contentInsets = PaddingValues(start = padding.calculateStartPadding(direction),
+            top = padding.calculateTopPadding(), end = padding.calculateEndPadding(direction))
+        val bottomClearance = padding.calculateBottomPadding()
+        Column(Modifier.padding(contentInsets).consumeWindowInsets(padding).fillMaxSize().widthIn(max = 840.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.expressive_phone), style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary)
+                    AnimatedContent(labels[tab], label = "page title") {
+                        Text(it, style = MaterialTheme.typography.displaySmall)
+                    }
+                }
+                FilledTonalIconButton(onClick = onSettings) { Symbol(DialerSymbol.Settings, stringResource(R.string.expressive_settings)) }
+            }
+            if (tab != 3) {
+                TextField(query, onQuery, Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    placeholder = { Text(stringResource(R.string.expressive_search)) },
+                    leadingIcon = { Symbol(DialerSymbol.Search) },
+                    trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onQuery("") }) {
+                        Symbol(DialerSymbol.Close, stringResource(R.string.expressive_clear))
+                    } }, singleLine = true, shape = CircleShape,
+                    colors = TextFieldDefaults.colors(focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
+            }
+            AnimatedContent(tab, Modifier.weight(1f), transitionSpec = {
+                (fadeIn(tween(180)) + slideInHorizontally(spring(.85f, 450f)) { if (targetState > initialState) it / 8 else -it / 8 }) togetherWith
+                    (fadeOut(tween(100)) + slideOutHorizontally { if (targetState > initialState) -it / 8 else it / 8 })
+            }, label = "page") { page ->
+                when {
+                    loading -> ExpressiveLoading(stringResource(R.string.expressive_loading))
+                    error -> EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_load_failed),
+                        stringResource(R.string.expressive_try_again), stringResource(R.string.expressive_retry), onRetry)
+                    page == 3 -> VoicemailScreen(onVoicemail, onSettings, bottomInset = bottomClearance)
+                    page == 0 && !data.callsAllowed || page in 1..2 && !data.contactsAllowed ->
+                        EmptyDialerState(DialerSymbol.People, stringResource(R.string.expressive_permission_title),
+                            stringResource(R.string.expressive_permission_body), stringResource(R.string.expressive_continue), onPermissions)
+                    else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(
+                        start = 20.dp, end = 20.dp, top = 16.dp, bottom = 104.dp + bottomClearance),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (page == 0) {
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(!missedOnly, { missedOnly = false }, { Text(stringResource(R.string.expressive_all)) })
+                                    FilterChip(missedOnly, { missedOnly = true }, { Text(stringResource(R.string.expressive_missed)) })
+                                }
+                            }
+                            if (groups.isEmpty()) item {
+                                EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_no_calls),
+                                    stringResource(if (query.isBlank()) R.string.expressive_no_calls_body else R.string.expressive_no_results))
+                            }
+                            var previousDay = ""
+                            groups.forEach { group ->
+                                val call = group.latest
+                                val day = DateUtils.getRelativeTimeSpanString(call.date, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS).toString()
+                                if (day != previousDay) {
+                                    item(key = "day_${call.id}") { SectionLabel(day) }
+                                    previousDay = day
+                                }
+                                item(key = group.id) {
+                                    RecentCallCard(group, expanded = expandedGroup == group.id,
+                                        onExpand = { expandedGroup = if (expandedGroup == group.id) null else group.id },
+                                        onActions = { recent = group }, onHistory = { history = call },
+                                        onCall = { onCall(call.number) }, onRequestDelete = { delete = group },
+                                        onDelete = { completed -> onDelete(group.calls, completed) },
+                                        modifier = Modifier.animateItem())
+                                }
+                            }
+                        } else {
+                            if (page == 2) item {
+                                TextButton(onClick = { onAddContact("") }) {
+                                    Symbol(DialerSymbol.Add); Text(stringResource(R.string.expressive_create_contact), Modifier.padding(start = 12.dp))
+                                }
+                            }
+                            if (page == 2 && query.isBlank()) item {
+                                Text(stringResource(R.string.expressive_photo_hint), Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (contacts.isEmpty()) item {
+                                EmptyDialerState(if (page == 1) DialerSymbol.Star else DialerSymbol.People,
+                                    stringResource(if (page == 1) R.string.expressive_no_favorites else R.string.expressive_no_contacts),
+                                    stringResource(if (query.isNotBlank()) R.string.expressive_no_results else if (page == 1) R.string.expressive_favorites_body else R.string.expressive_contacts_body))
+                            }
+                            if (page == 1) {
+                                items(contacts.chunked(2), key = { row -> "favorite_${row.first().id}:${row.first().number}" }) { row ->
+                                    Row(Modifier.fillMaxWidth().animateItem().padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        row.forEach { contact ->
+                                            Surface(Modifier.weight(1f), shape = RoundedCornerShape(32.dp),
+                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
+                                                Column(Modifier.fillMaxWidth().combinedClickable(
+                                                    onClick = { person = contact }, onLongClick = { person = contact }).padding(16.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                                    ContactAvatar(contact.name, number = contact.number)
+                                                    Text(contact.name, style = MaterialTheme.typography.titleMedium,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                                    FilledTonalIconButton(onClick = { onCall(contact.number) }) {
+                                                        Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, contact.name))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                                    }
+                                }
+                            } else items(contacts, key = { "${it.id}:${it.number}" }) { contact ->
+                                Surface(modifier = Modifier.animateItem(), shape = RoundedCornerShape(24.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                                    Row(Modifier.fillMaxWidth().combinedClickable(onClick = { person = contact },
+                                        onLongClick = { person = contact }).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        ContactAvatar(contact.name, number = contact.number)
+                                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                                            Text(contact.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        IconButton(onClick = { onCall(contact.number) }) {
+                                            Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, contact.name))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (keypad) ModalBottomSheet(onDismissRequest = { onKeypad(false) }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        LaunchedEffect(Unit) { keyboard?.hide() }
+        var input by remember { mutableStateOf(TextFieldValue(digits, TextRange(digits.length))) }
+        LaunchedEffect(digits) {
+            // The activity may normalize input or replace it through a new dial intent.
+            if (input.text != digits) input = TextFieldValue(digits, TextRange(digits.length))
+        }
+        fun updateInput(value: TextFieldValue) {
+            val normalized = normalizeDialpadInput(value)
+            val accepted = onDigits(normalized.text)
+            input = if (accepted == normalized.text) normalized else TextFieldValue(accepted, TextRange(accepted.length))
+        }
+        Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
+            Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    InterceptPlatformTextInput(interceptor = { _, _ -> awaitCancellation() }) {
+                        TextField(input, { updateInput(it) }, Modifier.weight(1f),
+                            textStyle = MaterialTheme.typography.headlineLarge.copy(textAlign = TextAlign.Center),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, showKeyboardOnFocus = false),
+                            placeholder = { Text(stringResource(R.string.expressive_enter_number),
+                                Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
+                    }
+                    ExpressiveTile(onClick = { updateInput(deleteDialpadSelection(input)) },
+                        onLongClick = { updateInput(TextFieldValue("")) },
+                        onLongClickLabel = stringResource(R.string.expressive_clear_number),
+                        enabled = input.text.isNotEmpty(), highlightOnPress = true,
+                        modifier = Modifier.width(56.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
+                        Symbol(DialerSymbol.Backspace, stringResource(R.string.expressive_backspace))
+                    }
+                }
+            }
+            val match = remember(data.people, digits) { if (digits.isBlank()) null else data.people.firstOrNull { matches(it.name, it.number, digits) } }
+            if (match != null) TextButton(onClick = { onCall(match.number) }) { Text("${match.name} · ${match.number}") }
+            else TextButton(onClick = { onAddContact(digits) }, enabled = digits.isNotBlank()) { Text(stringResource(R.string.expressive_create_contact)) }
+            DialerKeypad(onDigit = { updateInput(replaceDialpadSelection(input, it)) }, onLongDigit = { digit ->
+                when (digit) {
+                    "0" -> updateInput(replaceDialpadSelection(input, "+"))
+                    "1" -> if (input.text.isEmpty()) onVoicemail() else updateInput(replaceDialpadSelection(input, digit))
+                    else -> updateInput(replaceDialpadSelection(input, digit))
+                }
+            })
+            ExpressiveTile(onClick = { onCall(digits) }, enabled = digits.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
+                Symbol(DialerSymbol.Phone); Text(stringResource(R.string.expressive_call), Modifier.padding(start = 12.dp),
+                    style = MaterialTheme.typography.titleLarge)
+            }
+        }
+    }
+    person?.let { selected ->
+        val updated = data.people.firstOrNull { it.id == selected.id && it.number == selected.number } ?: selected
+        NumberActionsDialog(updated.name, updated.number, updated.starred, true,
+            onDismiss = { person = null }, onCall = { person = null; onCall(updated.number) },
+            onVideo = { person = null; onVideo(updated.number) }, onMessage = { person = null; onMessage(updated.number) },
+            onFavorite = { onStar(updated) }, onCopy = { onCopy(updated.number); person = null },
+            onShare = { person = null; onShare(updated.number) }, onEdit = { person = null; onEditContact(updated) },
+            onPhoto = { onPhoto(updated.number) }, onRemovePhoto = { onRemovePhoto(updated.number) })
+    }
+    history?.let { NumberCallHistory(it, data.calls, onDismiss = { history = null }) }
+    recent?.let { selectedGroup ->
+        val selected = selectedGroup.latest
+        val contact = data.people.firstOrNull { PhoneNumberUtils.compare(it.number, selected.number) }
+        if (selected.callable) NumberActionsDialog(selected.displayName(), selected.number, contact?.starred == true, contact != null,
+            onDismiss = { recent = null }, onCall = { recent = null; onCall(selected.number) },
+            onVideo = { recent = null; onVideo(selected.number) }, onMessage = { recent = null; onMessage(selected.number) },
+            onFavorite = { if (contact != null) onStar(contact) else { recent = null; onAddContact(selected.number) } },
+            onCopy = { onCopy(selected.number); recent = null }, onShare = { recent = null; onShare(selected.number) },
+            onEdit = { recent = null; if (contact != null) onEditContact(contact) else onAddContact(selected.number) },
+            onPhoto = { onPhoto(selected.number) }, onRemovePhoto = { onRemovePhoto(selected.number) },
+            onDelete = { delete = selectedGroup; recent = null })
+        else AlertDialog(onDismissRequest = { recent = null }, title = { Text(selected.displayName()) },
+            text = { Text(selected.typeLabel()) }, confirmButton = {
+                TextButton(onClick = { delete = selectedGroup; recent = null }) { Text(stringResource(R.string.expressive_delete_history)) }
+            }, dismissButton = { TextButton(onClick = { recent = null }) { Text(stringResource(R.string.expressive_cancel)) } })
+    }
+    delete?.let { selected -> AlertDialog(onDismissRequest = { delete = null },
+        title = { Text(stringResource(R.string.expressive_delete_call)) },
+        text = { Text(stringResource(R.string.expressive_delete_group_body)) },
+        confirmButton = { TextButton(onClick = { onDelete(selected.calls) {}; delete = null }) { Text(stringResource(R.string.expressive_delete)) } },
+        dismissButton = { TextButton(onClick = { delete = null }) { Text(stringResource(R.string.expressive_cancel)) } }) }
+}
+
+internal fun matches(name: String, number: String, query: String): Boolean {
+    if (query.isBlank()) return true
+    if (name.contains(query, ignoreCase = true) || number.contains(query)) return true
+    val normalized = PhoneNumberUtils.normalizeNumber(query)
+    return normalized.isNotEmpty() && (PhoneNumberUtils.normalizeNumber(number).contains(normalized) ||
+        PhoneNumberUtils.convertKeypadLettersToDigits(name).filter(Char::isDigit).contains(normalized))
+}
+
+@Composable
+internal fun RecentCall.displayName(): String = when (presentation) {
+    Calls.PRESENTATION_RESTRICTED -> stringResource(R.string.expressive_private_number)
+    Calls.PRESENTATION_PAYPHONE -> stringResource(R.string.expressive_payphone)
+    Calls.PRESENTATION_UNKNOWN, Calls.PRESENTATION_UNAVAILABLE -> stringResource(R.string.expressive_unknown)
+    else -> name.ifBlank { number.ifBlank { stringResource(R.string.expressive_unknown) } }
+}
+@Composable
+internal fun RecentCall.typeLabel(): String = stringResource(when (type) {
+    Calls.OUTGOING_TYPE -> R.string.expressive_outgoing
+    Calls.MISSED_TYPE -> R.string.expressive_missed
+    Calls.REJECTED_TYPE -> R.string.expressive_declined
+    Calls.BLOCKED_TYPE -> R.string.expressive_blocked
+    else -> R.string.expressive_incoming
+})
+@Composable
+fun SectionLabel(text: String) = Text(text, Modifier.padding(start = 8.dp, top = 18.dp, bottom = 8.dp),
+    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+@Composable
+fun EmptyDialerState(icon: DialerSymbol, title: String, body: String, action: String? = null, onClick: () -> Unit = {}) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+            Symbol(icon, modifier = Modifier.padding(24.dp).size(36.dp))
+        }
+        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (action != null) FilledTonalButton(onClick) { Text(action) }
+    }
+}
+@Composable
+fun DetailHeader(name: String, number: String) {
+    Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ContactAvatar(name, large = true, number = number)
+        Text(name, style = MaterialTheme.typography.headlineLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (number.isNotBlank() && number != name) Text(number, style = MaterialTheme.typography.titleMedium)
+    }
+}
+@Composable
+fun DetailAction(icon: DialerSymbol, title: String, modifier: Modifier, selected: Boolean = false, onClick: () -> Unit) {
+    ExpressiveTile(onClick, modifier, selected) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Symbol(icon); Text(title, style = MaterialTheme.typography.labelMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+    }
+}
+@Composable
+fun DialerKeypad(onDigit: (String) -> Unit, onLongDigit: (String) -> Unit = onDigit) {
+    val keys = listOf("1" to "", "2" to "ABC", "3" to "DEF", "4" to "GHI", "5" to "JKL", "6" to "MNO",
+        "7" to "PQRS", "8" to "TUV", "9" to "WXYZ", "*" to "", "0" to "+", "#" to "")
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        keys.chunked(3).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (digit, letters) ->
+                    ExpressiveTile(onClick = { onDigit(digit) }, onLongClick = { onLongDigit(digit) },
+                        highlightOnPress = true,
+                        modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(digit, style = MaterialTheme.typography.headlineMedium)
+                            Text(letters.ifBlank { " " }, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

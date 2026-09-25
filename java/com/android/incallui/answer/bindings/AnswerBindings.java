@@ -30,6 +30,10 @@ public class AnswerBindings {
       boolean isSelfManagedCamera,
       boolean allowAnswerAndRelease,
       boolean hasCallOnHold) {
+    if (!isRttCall && !isVideoCall && !isVideoUpgradeRequest) {
+      return com.android.dialer.expressive.ExpressiveAnswerFragment.create(
+          callId, allowAnswerAndRelease);
+    }
     return AnswerFragment.newInstance(
         callId,
         isRttCall,

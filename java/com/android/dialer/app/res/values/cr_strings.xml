@@ -32,9 +32,9 @@
     <string name="smart_mute_title">Smart mute</string>
     <string name="smart_mute_summary">Mute the incoming call by flipping the device</string>
 
-    <!-- Full Screen Caller Photo -->
-    <string name="fullscreen_caller_photo_title">Fullscreen photo</string>
-    <string name="fullscreen_caller_photo_summary">Display full-screen photo for incoming and outgoing calls</string>
+    <!-- Caller layout preference. The stored preference key remains fullscreen_caller_photo. -->
+    <string name="fullscreen_caller_photo_title">Full Screen Caller</string>
+    <string name="fullscreen_caller_photo_summary">Use a full-screen caller photo or avatar. Turn off to show a rounded avatar above the caller name and number.</string>
 
     <!-- Dialer postcall -->
     <string name="enable_post_call_title">Post call snackbar</string>

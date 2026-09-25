@@ -28,7 +28,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.android.dialer.R;
 
-public class LookupSettingsFragment extends PreferenceFragmentCompat
+public class LookupSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener {
 
   private static final String KEY_ENABLE_FORWARD_LOOKUP = "enable_forward_lookup";

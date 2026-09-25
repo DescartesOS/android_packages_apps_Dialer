@@ -57,48 +57,12 @@ public class DialerSettingsActivity extends BaseActivity implements
   protected void onCreate(Bundle savedInstanceState) {
     LogUtil.enterBlock("DialerSettingsActivity.onCreate");
     super.onCreate(savedInstanceState);
-    preferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
-
-    setContentView(R.layout.activity_settings);
-
-    Intent intent = getIntent();
-    Uri data = intent.getData();
-
-    String initialFragment = null;
-    if (data != null) {
-      String headerToOpen = data.getSchemeSpecificPart();
-      if (headerToOpen != null) {
-        initialFragment = headerToOpen;
-      }
-    }
-
-    // If savedInstanceState is non-null, then the activity is being
-    // recreated and super.onCreate() has already recreated the fragment.
-    if (savedInstanceState == null) {
-      if (initialFragment == null) {
-        initialFragment = PrefsFragment.class.getName();
-      }
-      Fragment fragment;
-      try {
-        fragment = getSupportFragmentManager()
-                .getFragmentFactory()
-                .instantiate(getClassLoader(), initialFragment);
-      } catch (Exception ignored) {
-        fragment = new PrefsFragment();
-      }
-
-      getSupportFragmentManager().beginTransaction()
-              .replace(R.id.content_frame, fragment)
-              .commit();
-    }
-
-    getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-      if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-        setTitle(R.string.dialer_settings_label);
-      }
-    });
-
-    setupInsets(findViewById(R.id.main_layout));
+    // Keep existing settings deep links and manifest entry points in the Compose UI.
+    Intent expressive = new Intent(this,
+        com.android.dialer.expressive.ExpressiveSettingsActivity.class);
+    expressive.setData(getIntent().getData());
+    startActivity(expressive);
+    finish();
   }
 
   @Override
@@ -116,23 +80,24 @@ public class DialerSettingsActivity extends BaseActivity implements
     return true;
   }
 
-  public static class PrefsFragment extends PreferenceFragmentCompat implements
+  public static class PrefsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment implements
           Preference.OnPreferenceClickListener {
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
       setPreferenceScreen(getPreferenceManager().createPreferenceScreen(requireContext()));
 
-      if (showDisplayOptions()) {
-        Preference displayOptions = new Preference(getContext());
-        displayOptions.setTitle(R.string.display_options_title);
-        displayOptions.setFragment(DisplayOptionsSettingsFragment.class.getName());
-        displayOptions.setIconSpaceReserved(false);
-        getPreferenceScreen().addPreference(displayOptions);
-      }
+      // Caller layout is configurable even in locales with a fixed contact name order.
+      Preference displayOptions = new Preference(getContext());
+      displayOptions.setTitle(R.string.display_options_title);
+      displayOptions.setSummary(R.string.expressive_settings_display_summary);
+      displayOptions.setFragment(DisplayOptionsSettingsFragment.class.getName());
+      displayOptions.setIconSpaceReserved(false);
+      getPreferenceScreen().addPreference(displayOptions);
 
       Preference soundSettings = new Preference(getContext());
       soundSettings.setTitle(R.string.sounds_and_vibration_title);
+      soundSettings.setSummary(R.string.expressive_settings_sound_summary);
       soundSettings.setFragment(SoundSettingsFragment.class.getName());
       soundSettings.setViewId(R.id.settings_header_sounds_and_vibration);
       soundSettings.setIconSpaceReserved(false);
@@ -142,12 +107,14 @@ public class DialerSettingsActivity extends BaseActivity implements
       Intent quickResponseSettingsIntent =
               new Intent(TelecomManager.ACTION_SHOW_RESPOND_VIA_SMS_SETTINGS);
       quickResponseSettings.setTitle(R.string.respond_via_sms_setting_title);
+      quickResponseSettings.setSummary(R.string.expressive_settings_responses_summary);
       quickResponseSettings.setIntent(quickResponseSettingsIntent);
       quickResponseSettings.setIconSpaceReserved(false);
       getPreferenceScreen().addPreference(quickResponseSettings);
 
       final Preference lookupSettings = new Preference(getContext());
       lookupSettings.setTitle(R.string.lookup_settings_label);
+      lookupSettings.setSummary(R.string.expressive_settings_lookup_summary);
       lookupSettings.setFragment(LookupSettingsFragment.class.getName());
       lookupSettings.setIconSpaceReserved(false);
       getPreferenceScreen().addPreference(lookupSettings);
@@ -165,6 +132,7 @@ public class DialerSettingsActivity extends BaseActivity implements
         callSettingsIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         callSettings.setTitle(R.string.call_settings_label);
+        callSettings.setSummary(R.string.expressive_settings_calls_summary);
         callSettings.setIntent(callSettingsIntent);
         callSettings.setIconSpaceReserved(false);
         getPreferenceScreen().addPreference(callSettings);
@@ -174,6 +142,7 @@ public class DialerSettingsActivity extends BaseActivity implements
         phoneAccountSettingsIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         phoneAccountSettings.setTitle(R.string.phone_account_settings_label);
+        phoneAccountSettings.setSummary(R.string.expressive_settings_accounts_summary);
         phoneAccountSettings.setIntent(phoneAccountSettingsIntent);
         phoneAccountSettings.setIconSpaceReserved(false);
         getPreferenceScreen().addPreference(phoneAccountSettings);
@@ -181,6 +150,7 @@ public class DialerSettingsActivity extends BaseActivity implements
       if (BlockedNumberContract.canCurrentUserBlockNumbers(getContext())) {
         Preference blockedCalls = new Preference(getContext());
         blockedCalls.setTitle(R.string.manage_blocked_numbers_label);
+        blockedCalls.setSummary(R.string.expressive_settings_blocked_summary);
         blockedCalls.setIntent(getContext().getSystemService(TelecomManager.class)
                 .createManageBlockedNumbersIntent());
         blockedCalls.setIconSpaceReserved(false);
@@ -196,6 +166,7 @@ public class DialerSettingsActivity extends BaseActivity implements
         Intent accessibilitySettingsIntent =
                 new Intent(TelecomManager.ACTION_SHOW_CALL_ACCESSIBILITY_SETTINGS);
         accessibilitySettings.setTitle(R.string.accessibility_settings_title);
+        accessibilitySettings.setSummary(R.string.expressive_settings_accessibility_summary);
         accessibilitySettings.setIntent(accessibilitySettingsIntent);
         accessibilitySettings.setIconSpaceReserved(false);
         getPreferenceScreen().addPreference(accessibilitySettings);
@@ -203,6 +174,7 @@ public class DialerSettingsActivity extends BaseActivity implements
 
       final Preference otherSettings = new Preference(getContext());
       otherSettings.setTitle(R.string.other_settings_label);
+      otherSettings.setSummary(R.string.expressive_settings_other_summary);
       otherSettings.setFragment(OtherSettingsFragment.class.getName());
       otherSettings.setIconSpaceReserved(false);
       getPreferenceScreen().addPreference(otherSettings);
@@ -241,6 +213,7 @@ public class DialerSettingsActivity extends BaseActivity implements
       LogUtil.i("DialerSettingsActivity.addVoicemailSettings", "adding voicemail settings");
       Preference voicemailSettings = new Preference(getContext());
       voicemailSettings.setTitle(R.string.voicemail_settings_label);
+      voicemailSettings.setSummary(R.string.expressive_settings_voicemail_summary);
       Bundle bundle = new Bundle();
       PhoneAccountHandle soleAccount = getSoleSimAccount();
       if (soleAccount == null) {
@@ -292,18 +265,6 @@ public class DialerSettingsActivity extends BaseActivity implements
         }
       }
       return result;
-    }
-
-    /**
-     * Returns {@code true} or {@code false} based on whether the display options setting should be
-     * shown. For languages such as Chinese, Japanese, or Korean, display options aren't useful
-     * since contacts are sorted and displayed family name first by default.
-     *
-     * @return {@code true} if the display options should be shown, {@code false} otherwise.
-     */
-    private boolean showDisplayOptions() {
-      return getResources().getBoolean(R.bool.config_display_order_user_changeable)
-              && getResources().getBoolean(R.bool.config_sort_order_user_changeable);
     }
 
     /**

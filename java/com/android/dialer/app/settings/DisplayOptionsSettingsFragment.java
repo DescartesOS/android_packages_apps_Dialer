@@ -29,7 +29,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.android.dialer.R;
 
-public class DisplayOptionsSettingsFragment extends PreferenceFragmentCompat
+public class DisplayOptionsSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener {
 
   private static final String FULLSCREEN_CALLER_PHOTO = "fullscreen_caller_photo";
@@ -43,12 +43,17 @@ public class DisplayOptionsSettingsFragment extends PreferenceFragmentCompat
   public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
     addPreferencesFromResource(R.xml.display_options_settings);
 
+    findPreference(getString(R.string.display_options_sort_list_by_key)).setVisible(
+        getResources().getBoolean(R.bool.config_sort_order_user_changeable));
+    findPreference(getString(R.string.display_options_view_names_as_key)).setVisible(
+        getResources().getBoolean(R.bool.config_display_order_user_changeable));
+
     Context context = getActivity();
 
     mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 
     mFullscreenCallerPhoto = findPreference(FULLSCREEN_CALLER_PHOTO);
-    mFullscreenCallerPhoto.setChecked(mPrefs.getBoolean(FULLSCREEN_CALLER_PHOTO, false));
+    mFullscreenCallerPhoto.setChecked(mPrefs.getBoolean(FULLSCREEN_CALLER_PHOTO, true));
     mFullscreenCallerPhoto.setOnPreferenceChangeListener(this);
 
   }

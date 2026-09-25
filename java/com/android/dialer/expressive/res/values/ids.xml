@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2024-2026 Lunaris AOSP. SPDX-License-Identifier: Apache-2.0 -->
+<resources>
+    <item name="expressive_dialog" type="id" />
+    <item name="expressive_settings_toolbar" type="id" />
+    <item name="expressive_main" type="id" />
+    <item name="expressive_call" type="id" />
+    <item name="expressive_dtmf" type="id" />
+    <item name="expressive_preferences" type="id" />
+    <item name="expressive_settings_content" type="id" />
+</resources>

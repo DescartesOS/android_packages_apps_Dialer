@@ -51,7 +51,7 @@ import java.util.Optional;
  * Fragment for voicemail settings. Requires {@link VoicemailClient#PARAM_PHONE_ACCOUNT_HANDLE} set
  * in arguments.
  */
-public class VoicemailSettingsFragment extends PreferenceFragmentCompat
+public class VoicemailSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener, ActivationStateListener {
 
   // Extras copied from com.android.phone.settings.VoicemailSettingsActivity,
@@ -267,7 +267,7 @@ public class VoicemailSettingsFragment extends PreferenceFragmentCompat
           R.string.voicemail_change_pin_preference_summary_not_activated);
       voicemailChangePinPreference.setEnabled(false);
     } else {
-      voicemailChangePinPreference.setSummary(null);
+      voicemailChangePinPreference.setSummary(R.string.expressive_settings_voicemail_pin_summary);
       voicemailChangePinPreference.setEnabled(true);
     }
   }
@@ -289,7 +289,7 @@ public class VoicemailSettingsFragment extends PreferenceFragmentCompat
         && !voicemailClient.isActivated(getContext(), phoneAccountHandle)) {
       visualVoicemailPreference.setSummary(R.string.voicemail_activating_summary_info);
     } else {
-      visualVoicemailPreference.setSummary("");
+      visualVoicemailPreference.setSummary(R.string.expressive_settings_visual_voicemail_summary);
     }
   }
 

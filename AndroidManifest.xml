@@ -315,6 +315,10 @@
             android:multiprocess="false" />
 
         <!-- TODO(a bug): remove activity themes and only have application wide themes -->
+        <activity
+            android:name="com.android.dialer.expressive.ExpressiveSettingsActivity"
+            android:exported="false"
+            android:theme="@style/Dialer.ThemeBase.NoActionBar" />
         <!-- The entrance point for Phone UI.
              stateAlwaysHidden is set to suppress keyboard show up on dialpad screen. -->
         <activity

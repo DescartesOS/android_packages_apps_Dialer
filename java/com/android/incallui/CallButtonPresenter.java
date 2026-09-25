@@ -17,7 +17,6 @@
 
 package com.android.incallui;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -304,17 +303,20 @@ public class CallButtonPresenter
       final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
       boolean warningPresented = prefs.getBoolean(KEY_RECORDING_WARNING_PRESENTED, false);
       if (!warningPresented) {
-        new AlertDialog.Builder(getActivity())
-            .setTitle(R.string.recording_warning_title)
-            .setMessage(R.string.recording_warning_text)
-            .setPositiveButton(R.string.onscreenCallRecordText, (dialog, which) -> {
+        if (inCallButtonUi == null || call == null) {
+          return;
+        }
+        final DialerCall recordingCall = call;
+        com.android.dialer.expressive.ExpressiveDialogs.showRecordingWarning(
+            inCallButtonUi.getInCallButtonUiFragment(), () -> {
+              if (call != recordingCall) {
+                return;
+              }
               prefs.edit()
                   .putBoolean(KEY_RECORDING_WARNING_PRESENTED, true)
                   .apply();
               startCallRecordingOrAskForPermission();
-            })
-            .setNegativeButton(android.R.string.cancel, null)
-            .show();
+            });
       } else {
         startCallRecordingOrAskForPermission();
       }
@@ -326,6 +328,9 @@ public class CallButtonPresenter
   }
 
   private void startCallRecordingOrAskForPermission() {
+    if (call == null || call.getState() != DialerCallState.ACTIVE || inCallButtonUi == null) {
+      return;
+    }
     if (hasAllPermissions(CallRecorder.REQUIRED_PERMISSIONS)) {
       CallRecorder recorder = CallRecorder.getInstance();
       recorder.startRecording(call.getNumber(), call.getCreationTimeMillis());

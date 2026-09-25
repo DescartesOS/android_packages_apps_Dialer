@@ -49,7 +49,7 @@ public class MainActivity extends TransactionSafeActivity
     super.onCreate(savedInstanceState);
     LogUtil.enterBlock("MainActivity.onCreate");
 
-    activePeer = new OldMainActivityPeer(this);
+    activePeer = new com.android.dialer.expressive.ExpressiveMainActivityPeer(this);
     activePeer.onActivityCreate(savedInstanceState);
 
     showBlockReportSpamDialogReceiver =

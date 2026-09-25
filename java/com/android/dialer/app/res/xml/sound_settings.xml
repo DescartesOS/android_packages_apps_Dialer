@@ -26,18 +26,20 @@
         android:persistent="false"
         android:ringtoneType="ringtone"
         android:title="@string/ringtone_title"
-        android:summary="&#x20;"
+        android:summary="@string/expressive_settings_ringtone_summary"
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
         android:defaultValue="false"
         android:key="@string/vibrate_on_preference_key"
+        android:summary="@string/expressive_settings_vibrate_summary"
         android:persistent="false"
         android:title="@string/vibrate_on_ring_title" />
 
     <SwitchPreferenceCompat
         android:defaultValue="true"
         android:key="@string/play_dtmf_preference_key"
+        android:summary="@string/expressive_settings_dtmf_summary"
         android:persistent="false"
         android:title="@string/dtmf_tone_enable_title" />
 
@@ -45,6 +47,7 @@
         android:entries="@array/dtmf_tone_length_entries"
         android:entryValues="@array/dtmf_tone_length_entry_values"
         android:key="@string/dtmf_tone_length_preference_key"
+        android:summary="@string/expressive_settings_dtmf_length_summary"
         android:title="@string/dtmf_tone_length_title"
         app:iconSpaceReserved="false" />
 
@@ -56,18 +59,22 @@
         <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="incall_enable_dnd"
+            android:summary="@string/expressive_settings_dnd_summary"
             android:title="@string/incall_enable_dnd_title" />
 
         <SwitchPreferenceCompat
             android:key="@string/incall_vibrate_outgoing_key"
+            android:summary="@string/expressive_settings_answer_vibration_summary"
             android:title="@string/incall_vibrate_outgoing_title" />
 
         <SwitchPreferenceCompat
             android:key="@string/incall_vibrate_call_waiting_key"
+            android:summary="@string/expressive_settings_waiting_vibration_summary"
             android:title="@string/incall_vibrate_call_waiting_title" />
 
         <SwitchPreferenceCompat
             android:key="@string/incall_vibrate_hangup_key"
+            android:summary="@string/expressive_settings_hangup_vibration_summary"
             android:title="@string/incall_vibrate_hangup_title" />
 
         <SwitchPreferenceCompat
@@ -87,13 +94,14 @@
             android:entries="@array/call_recording_encoder_entries"
             android:entryValues="@array/call_recording_encoder_values"
             android:key="@string/call_recording_format_key"
-            android:summary="%s"
+            android:summary="@string/expressive_settings_recording_format_summary"
             android:title="@string/call_recording_format"
             app:iconSpaceReserved="false" />
 
         <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="@string/call_recording_autostart_key"
+            android:summary="@string/expressive_settings_recording_auto_summary"
             android:title="@string/call_recording_autostart_title" />
 
     </PreferenceCategory>

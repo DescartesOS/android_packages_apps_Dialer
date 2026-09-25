@@ -129,6 +129,7 @@ android_app {
         "privapp_whitelist_com.android.dialer-ext.xml",
     ],
     resource_dirs: [
+        "java/com/android/dialer/expressive/res",
         "assets/quantum/res",
         "java/com/android/contacts/common/res",
         "java/com/android/dialer/app/res",
@@ -211,8 +212,20 @@ android_app {
     srcs: [
         "java/**/I*.aidl",
         "java/**/*.java",
+        "java/**/*.kt",
     ],
     static_libs: [
+        "androidx.core_core-ktx",
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        // Must expose MaterialExpressiveTheme and LoadingIndicator; stable 1.4.0 does not.
+        // See EXPRESSIVE_MIGRATION.md for the verified API set and ROM validation steps.
+        "androidx.compose.material3_material3",
+        "androidx.compose.animation_animation",
+        "androidx.lifecycle_lifecycle-runtime-ktx",
+        "kotlinx-coroutines-android",
         "android-common",
         "androidx.annotation_annotation",
         "androidx.appcompat_appcompat",
@@ -245,6 +258,7 @@ android_app {
         "volley",
     ],
     use_embedded_native_libs: true,
+    kotlincflags: ["-Xjvm-default=all"],
 }
 
 java_library {

@@ -24,9 +24,11 @@ import android.os.Bundle;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
@@ -39,7 +41,7 @@ import java.util.List;
  * Preference screen that lists SIM phone accounts to select from, and forwards the selected account
  * to {@link #PARAM_TARGET_FRAGMENT}.
  */
-public class PhoneAccountSelectionFragment extends PreferenceFragmentCompat {
+public class PhoneAccountSelectionFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment {
 
   /** The {@link PreferenceFragmentCompat} to launch after the account is selected. */
   public static final String PARAM_TARGET_FRAGMENT = "target_fragment";
@@ -89,7 +91,9 @@ public class PhoneAccountSelectionFragment extends PreferenceFragmentCompat {
       super(context);
       this.phoneAccountHandle = phoneAccountHandle;
       setTitle(phoneAccount.getLabel());
-      setSummary(phoneAccount.getShortDescription());
+      setSummary(TextUtils.isEmpty(phoneAccount.getShortDescription())
+          ? context.getString(R.string.expressive_settings_account_summary)
+          : phoneAccount.getShortDescription());
       Icon icon = phoneAccount.getIcon();
       if (icon != null) {
         setIcon(icon.loadDrawable(context));
@@ -107,10 +111,12 @@ public class PhoneAccountSelectionFragment extends PreferenceFragmentCompat {
       arguments.putParcelable(phoneAccountHandleKey, phoneAccountHandle);
       fragment.setArguments(arguments);
       getParentFragmentManager().beginTransaction()
+              .setReorderingAllowed(true)
+              .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
               .replace(R.id.content_frame, fragment)
-              .addToBackStack(null)
+              .addToBackStack(getString(titleRes))
               .commit();
-      setTitle(titleRes);
+      requireActivity().setTitle(titleRes);
     }
   }
 

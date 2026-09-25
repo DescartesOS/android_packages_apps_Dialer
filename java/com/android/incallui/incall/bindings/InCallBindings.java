@@ -23,6 +23,6 @@ import com.android.incallui.incall.protocol.InCallScreen;
 public class InCallBindings {
 
   public static InCallScreen createInCallScreen() {
-    return new InCallFragment();
+    return new com.android.dialer.expressive.ExpressiveCallFragment();
   }
 }

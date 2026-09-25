@@ -22,7 +22,7 @@
   <ListPreference
       android:dialogTitle="@string/display_options_sort_list_by"
       android:key="@string/display_options_sort_list_by_key"
-      android:summary="%s"
+      android:summary="@string/expressive_settings_sort_summary"
       android:entries="@array/contact_sort_order_entries"
       android:entryValues="@array/contact_sort_order_values"
       android:title="@string/display_options_sort_list_by"
@@ -32,7 +32,7 @@
   <ListPreference
       android:dialogTitle="@string/display_options_view_names_as"
       android:key="@string/display_options_view_names_as_key"
-      android:summary="%s"
+      android:summary="@string/expressive_settings_name_order_summary"
       android:entries="@array/contact_display_order_entries"
       android:entryValues="@array/contact_display_order_values"
       android:title="@string/display_options_view_names_as"
@@ -43,7 +43,7 @@
       android:key="fullscreen_caller_photo"
       android:title="@string/fullscreen_caller_photo_title"
       android:summary="@string/fullscreen_caller_photo_summary"
-      android:defaultValue="false" />
+      android:defaultValue="true"
       app:iconSpaceReserved="false"/>
 
 </PreferenceScreen>

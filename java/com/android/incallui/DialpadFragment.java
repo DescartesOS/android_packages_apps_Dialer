@@ -156,7 +156,7 @@ public class DialpadFragment extends BaseFragment<DialpadPresenter, DialpadUi>
     backButton.setOnClickListener(this);
     endCallSpace = dialpadView.findViewById(R.id.end_call_space);
 
-    return parent;
+    return com.android.dialer.expressive.ComposeInCallDialpad.create(this, dtmfDialerField);
   }
 
   @Override
@@ -190,9 +190,16 @@ public class DialpadFragment extends BaseFragment<DialpadPresenter, DialpadUi>
   }
 
   /** Starts the slide up animation for the Dialpad keys when the Dialpad is revealed. */
+  public void onExpressiveDigit(char digit, boolean pressed) {
+    if (pressed) {
+      getPresenter().processDtmf(digit);
+    } else {
+      getPresenter().stopDtmf();
+    }
+  }
+
   public void animateShowDialpad() {
-    final DialpadView dialpadView = getView().findViewById(R.id.dialpad_view);
-    dialpadView.animateShow();
+
   }
 
   @Override

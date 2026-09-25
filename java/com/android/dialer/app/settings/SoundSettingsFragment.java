@@ -50,7 +50,7 @@ import com.android.dialer.R;
 import com.android.dialer.callrecord.impl.CallRecorderService;
 import com.android.dialer.util.SettingsUtil;
 
-public class SoundSettingsFragment extends PreferenceFragmentCompat
+public class SoundSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener {
 
   private static final String KEY_RECORDING_WARNING_PRESENTED = "recording_warning_presented";
@@ -253,17 +253,12 @@ public class SoundSettingsFragment extends PreferenceFragmentCompat
                 getPreferenceManager().getDefaultSharedPreferences(getContext());
         boolean warningPresented = prefs.getBoolean(KEY_RECORDING_WARNING_PRESENTED, false);
         if (!warningPresented) {
-          new AlertDialog.Builder(getActivity())
-                  .setTitle(R.string.recording_warning_title)
-                  .setMessage(R.string.recording_warning_text)
-                  .setPositiveButton(R.string.onscreenCallRecordText, (dialog, which) -> {
-                    prefs.edit()
-                            .putBoolean(KEY_RECORDING_WARNING_PRESENTED, true)
-                            .apply();
-                    callRecordAutostart.setChecked(true);
-                  })
-                  .setNegativeButton(android.R.string.cancel, null)
-                  .show();
+          com.android.dialer.expressive.ExpressiveDialogs.showRecordingWarning(this, () -> {
+            prefs.edit()
+                .putBoolean(KEY_RECORDING_WARNING_PRESENTED, true)
+                .apply();
+            callRecordAutostart.setChecked(true);
+          });
 
           // At this time, it is unknown whether the user granted the permission
           return false;
