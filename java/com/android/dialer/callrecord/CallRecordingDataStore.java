@@ -37,6 +37,8 @@ import java.util.List;
  * close()
  */
 public class CallRecordingDataStore {
+  public static final String ACTION_RECORDINGS_CHANGED =
+      "com.android.dialer.callrecord.RECORDINGS_CHANGED";
   private static final String TAG = "CallRecordingStore";
   private SQLiteOpenHelper mOpenHelper = null;
   private SQLiteDatabase mDatabase = null;
@@ -80,8 +82,7 @@ public class CallRecordingDataStore {
         CallRecordingsContract.CallRecording.COLUMN_NAME_MEDIA_ID + ") " +
         " VALUES (?, ?, ?, ?, ?)";
 
-    try {
-      SQLiteStatement stmt = mDatabase.compileStatement(insertSql);
+    try (SQLiteStatement stmt = mDatabase.compileStatement(insertSql)) {
       int idx = 1;
       stmt.bindString(idx++, recording.phoneNumber);
       stmt.bindLong(idx++, recording.creationTime);
@@ -136,6 +137,35 @@ public class CallRecordingDataStore {
     }
 
     return resultList;
+  }
+
+  public List<CallRecording> getRecordingsForNumber(String phoneNumber, String countryIso) {
+    List<CallRecording> recordings = new ArrayList<>();
+    String key = CallRecordingNumbers.key(phoneNumber, countryIso);
+    if (key.isEmpty()) {
+      return recordings;
+    }
+    try (Cursor cursor = mDatabase.query(CallRecordingsContract.CallRecording.TABLE_NAME,
+        new String[] {
+          CallRecordingsContract.CallRecording.COLUMN_NAME_PHONE_NUMBER,
+          CallRecordingsContract.CallRecording.COLUMN_NAME_CALL_DATE,
+          CallRecordingsContract.CallRecording.COLUMN_NAME_RECORDING_FILENAME,
+          CallRecordingsContract.CallRecording.COLUMN_NAME_CREATION_DATE,
+          CallRecordingsContract.CallRecording.COLUMN_NAME_MEDIA_ID
+        }, CallRecordingsContract.CallRecording.COLUMN_NAME_MEDIA_ID + " > 0",
+        null, null, null,
+        CallRecordingsContract.CallRecording.COLUMN_NAME_CALL_DATE + " DESC, "
+            + CallRecordingsContract.CallRecording.COLUMN_NAME_CREATION_DATE + " DESC, "
+            + CallRecordingsContract.CallRecording._ID + " DESC")) {
+      while (cursor.moveToNext()) {
+        String recordedNumber = cursor.getString(0);
+        if (key.equals(CallRecordingNumbers.key(recordedNumber, countryIso))) {
+          recordings.add(new CallRecording(recordedNumber, cursor.getLong(1), cursor.getString(2),
+              cursor.getLong(3), cursor.getLong(4)));
+        }
+      }
+    }
+    return recordings;
   }
 
   public SparseArray<CallRecording> getUnmigratedRecordingData() {

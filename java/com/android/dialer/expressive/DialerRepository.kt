@@ -21,6 +21,8 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.CallLog.Calls
+import android.provider.BlockedNumberContract
+import android.provider.BlockedNumberContract.BlockedNumbers
 import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.telephony.TelephonyManager
@@ -35,6 +37,7 @@ data class Person(val id: Long, val lookupKey: String, val name: String, val num
 data class DialerData(val people: List<Person> = emptyList(), val calls: List<RecentCall> = emptyList(),
     val contactsAllowed: Boolean = false, val callsAllowed: Boolean = false,
     val recentGroups: List<RecentCallGroup> = groupConsecutiveCalls(calls))
+internal data class NumberBlockState(val blocked: Boolean, val available: Boolean)
 
 class DialerRepository(private val context: Context) {
     fun has(permission: String) = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -78,5 +81,21 @@ class DialerRepository(private val context: Context) {
             context.contentResolver.delete(Calls.CONTENT_URI,
                 "${Calls._ID} IN (${ids.joinToString(",") { "?" }})", ids.map { it.toString() }.toTypedArray())
         }
+    }
+    internal suspend fun blockState(number: String): NumberBlockState = withContext(Dispatchers.IO) {
+        val available = number.isNotBlank() && BlockedNumberContract.canCurrentUserBlockNumbers(context)
+        NumberBlockState(available && BlockedNumberContract.isBlocked(context, number), available)
+    }
+    internal suspend fun setBlocked(number: String, blocked: Boolean): NumberBlockState = withContext(Dispatchers.IO) {
+        check(number.isNotBlank() && BlockedNumberContract.canCurrentUserBlockNumbers(context))
+        if (blocked) {
+            if (!BlockedNumberContract.isBlocked(context, number)) {
+                checkNotNull(context.contentResolver.insert(BlockedNumbers.CONTENT_URI,
+                    ContentValues().apply { put(BlockedNumbers.COLUMN_ORIGINAL_NUMBER, number) }))
+            }
+        } else {
+            BlockedNumberContract.unblock(context, number)
+        }
+        blockState(number).also { check(it.available && it.blocked == blocked) }
     }
 }

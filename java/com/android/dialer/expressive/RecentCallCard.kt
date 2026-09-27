@@ -44,7 +44,7 @@ import kotlin.math.abs
 @Composable
 internal fun RecentCallCard(
     group: RecentCallGroup, expanded: Boolean, onExpand: () -> Unit,
-    onActions: () -> Unit, onHistory: () -> Unit, onCall: () -> Unit,
+    onActions: () -> Unit, onHistory: () -> Unit, onRecordings: () -> Unit, onCall: () -> Unit,
     onRequestDelete: () -> Unit, onDelete: ((Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -141,6 +141,11 @@ internal fun RecentCallCard(
                             Symbol(DialerSymbol.History)
                             Text(stringResource(R.string.expressive_full_history), Modifier.padding(start = 8.dp))
                         }
+                        if (call.callable) TextButton(onClick = onRecordings, enabled = !deleting,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Symbol(DialerSymbol.Record)
+                            Text(stringResource(R.string.expressive_call_recordings), Modifier.padding(start = 8.dp))
+                        }
                     }
                 }
             }
@@ -166,7 +171,8 @@ private fun RecentCallDetail(call: RecentCall, showDate: Boolean) {
 
 /* Forget her. She is history. */
 @Composable
-internal fun NumberCallHistory(selected: RecentCall, calls: List<RecentCall>, onDismiss: () -> Unit) {
+internal fun NumberCallHistory(selected: RecentCall, calls: List<RecentCall>,
+    onDismiss: () -> Unit, onRecordings: () -> Unit) {
     val context = LocalContext.current
     val history = remember(calls, selected.numberKey) { calls.filter { selected.isSameNumber(it) } }
     ModalBottomSheet(onDismissRequest = onDismiss,
@@ -179,6 +185,10 @@ internal fun NumberCallHistory(selected: RecentCall, calls: List<RecentCall>, on
                     if (selected.name.isNotBlank()) Text(selected.number, style = MaterialTheme.typography.bodyMedium)
                 }
                 IconButton(onClick = onDismiss) { Symbol(DialerSymbol.Close, stringResource(R.string.expressive_close_history)) }
+            }
+            TextButton(onClick = onRecordings, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Symbol(DialerSymbol.Record)
+                Text(stringResource(R.string.expressive_call_recordings), Modifier.padding(start = 8.dp))
             }
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) {
                 if (history.isEmpty()) item {

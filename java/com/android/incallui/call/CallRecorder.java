@@ -21,26 +21,25 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.XmlResourceParser;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
-
 import com.android.dialer.R;
 import com.android.dialer.callrecord.CallRecording;
 import com.android.dialer.callrecord.CallRecordingDataStore;
+import com.android.dialer.callrecord.CallRecordingPreferences;
 import com.android.dialer.callrecord.ICallRecorderService;
 import com.android.dialer.callrecord.impl.CallRecorderService;
 import com.android.dialer.location.GeoUtil;
-import com.android.incallui.call.state.DialerCallState;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -66,10 +65,16 @@ public class CallRecorder implements CallList.Listener {
   private static final HashMap<String, Boolean> RECORD_ALLOWED_STATE_BY_COUNTRY = new HashMap<>();
 
   private static CallRecorder instance = null;
+  private final CallList callList;
   private Context context;
   private boolean initialized = false;
   private ICallRecorderService service = null;
   private Pair<String, Long> pendingRecordLaunch = null;
+  private boolean pendingAutoStart;
+  private String recordingCallId;
+  private String recordingNumber;
+  private String lastActiveCallId;
+  private String lastActiveNumber;
 
   private final HashSet<RecordingProgressListener> progressListeners = new HashSet<>();
   private final Handler handler = new Handler(Looper.getMainLooper());
@@ -79,27 +84,38 @@ public class CallRecorder implements CallList.Listener {
     public void onServiceConnected(ComponentName name, IBinder service) {
       CallRecorder.this.service = ICallRecorderService.Stub.asInterface(service);
       Pair<String, Long> pending = CallRecorder.this.pendingRecordLaunch;
+      boolean automatic = pendingAutoStart;
+      CallRecorder.this.pendingRecordLaunch = null;
       if (pending != null) {
-        CallRecorder.this.startRecording(pending.first, pending.second);
-        CallRecorder.this.pendingRecordLaunch = null;
+        DialerCall activeCall = callList.getActiveCall();
+        if (activeCall != null && TextUtils.equals(recordingCallId, activeCall.getId())
+            && TextUtils.equals(pending.first, activeCall.getNumber())
+            && pending.second == activeCall.getCreationTimeMillis()
+            && (!automatic || isCallRecordAutostart(activeCall))) {
+          startRecording(activeCall, automatic);
+        } else {
+          recordingCallId = null;
+          recordingNumber = null;
+        }
       }
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
       CallRecorder.this.service = null;
+      finishRecording();
     }
   };
 
   public static CallRecorder getInstance() {
     if (instance == null) {
-      instance = new CallRecorder();
+      instance = new CallRecorder(CallList.getInstance());
     }
     return instance;
   }
 
   public boolean isEnabled() {
-    return CallRecorderService.isEnabled(context);
+    return context != null && CallRecorderService.isEnabled(context);
   }
 
   public boolean canRecordInCurrentCountry() {
@@ -116,23 +132,27 @@ public class CallRecorder implements CallList.Listener {
       return allowedState != null && allowedState;
   }
 
-  private CallRecorder() {
-    CallList.getInstance().addListener(this);
+  CallRecorder(CallList callList) {
+    this.callList = callList;
+    callList.addListener(this);
   }
 
   public void setUp(Context context) {
     this.context = context.getApplicationContext();
+    onCallListChange(callList);
   }
 
   private void initialize() {
     if (isEnabled() && !initialized) {
       Intent serviceIntent = new Intent(context, CallRecorderService.class);
-      context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE);
-      initialized = true;
+      initialized = context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE);
     }
   }
 
   private void uninitialize() {
+    pendingRecordLaunch = null;
+    recordingCallId = null;
+    recordingNumber = null;
     if (initialized) {
       context.unbindService(connection);
       service = null;
@@ -141,8 +161,39 @@ public class CallRecorder implements CallList.Listener {
   }
 
   public boolean startRecording(final String phoneNumber, final long creationTime) {
+    DialerCall activeCall = callList.getActiveCall();
+    if (activeCall == null || !TextUtils.equals(activeCall.getNumber(), phoneNumber)
+        || activeCall.getCreationTimeMillis() != creationTime) {
+      return false;
+    }
+    return startRecording(activeCall, false);
+  }
+
+  private boolean startRecording(DialerCall call, boolean automatic) {
+    if (!isEnabled() || context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+        != PackageManager.PERMISSION_GRANTED) {
+      recordingCallId = null;
+      recordingNumber = null;
+      return false;
+    }
+    initialize();
+    if (!initialized) {
+      return false;
+    }
+    if (recordingCallId != null && (!TextUtils.equals(recordingCallId, call.getId())
+        || !TextUtils.equals(recordingNumber, call.getNumber()))) {
+      finishRecording();
+    }
+    if (TextUtils.equals(recordingCallId, call.getId()) && isRecording()) {
+      return true;
+    }
+    String phoneNumber = call.getNumber();
+    long creationTime = call.getCreationTimeMillis();
+    recordingCallId = call.getId();
+    recordingNumber = phoneNumber;
     if (service == null) {
       pendingRecordLaunch = Pair.create(phoneNumber, creationTime);
+      pendingAutoStart = automatic;
       return false;
     }
 
@@ -161,6 +212,8 @@ public class CallRecorder implements CallList.Listener {
       Log.w(TAG, "Failed to start recording " + phoneNumber + ", " + new Date(creationTime), e);
     }
 
+    recordingCallId = null;
+    recordingNumber = null;
     return false;
   }
 
@@ -192,6 +245,8 @@ public class CallRecorder implements CallList.Listener {
 
   public void finishRecording() {
     pendingRecordLaunch = null;
+    recordingCallId = null;
+    recordingNumber = null;
     if (service != null) {
       try {
         final CallRecording recording = service.stopRecording();
@@ -199,9 +254,16 @@ public class CallRecorder implements CallList.Listener {
           if (!TextUtils.isEmpty(recording.phoneNumber)) {
             new Thread(() -> {
               CallRecordingDataStore dataStore = new CallRecordingDataStore();
-              dataStore.open(context);
-              dataStore.putRecording(recording);
-              dataStore.close();
+              try {
+                dataStore.open(context);
+                dataStore.putRecording(recording);
+                context.sendBroadcast(new Intent(CallRecordingDataStore.ACTION_RECORDINGS_CHANGED)
+                    .setPackage(context.getPackageName()));
+              } catch (RuntimeException e) {
+                Log.w(TAG, "Failed to index call recording", e);
+              } finally {
+                dataStore.close();
+              }
             }).start();
           } else {
             // Data store is an index by number so that we can link recordings in the
@@ -233,63 +295,43 @@ public class CallRecorder implements CallList.Listener {
 
   @Override
   public void onCallListChange(final CallList callList) {
+    if (context == null) {
+      return;
+    }
     DialerCall activeCall = callList.getActiveCall();
-    if (!initialized && activeCall != null) {
-      // we'll come here if this is the first active call
+    String activeCallId = activeCall == null ? null : activeCall.getId();
+    String activeNumber = activeCall == null ? null : activeCall.getNumber();
+    boolean changed = !TextUtils.equals(lastActiveCallId, activeCallId)
+        || !TextUtils.equals(lastActiveNumber, activeNumber);
+    lastActiveCallId = activeCallId;
+    lastActiveNumber = activeNumber;
+    if (recordingCallId != null && (!TextUtils.equals(recordingCallId, activeCallId)
+        || !TextUtils.equals(recordingNumber, activeNumber))) {
+      finishRecording();
+    }
+    if (activeCall != null) {
       initialize();
-      if (isCallRecordAutostart()) {
-        startRecording(activeCall.getNumber(), activeCall.getCreationTimeMillis());
-      }
-    } else {
-      String activePhoneNumber = getActiveRecordingPhoneNumber();
-      if (activeCall != null) {
-        if (!TextUtils.equals(activeCall.getNumber(), activePhoneNumber)) {
-          // the call is replaced by another one
-          if (activePhoneNumber != null) {
-            finishRecording();
-          }
-          if (isCallRecordAutostart()) {
-            startRecording(activeCall.getNumber(), activeCall.getCreationTimeMillis());
-          }
-        }
-      } else {
-        // the active call disappeared
-        if (activePhoneNumber != null) {
-          DialerCall call =
-                  callList.getCallWithStateAndNumber(DialerCallState.ONHOLD, activePhoneNumber);
-          if (call != null) {
-            // The call associated with the active recording has been placed
-            // on hold, so stop the recording.
-            finishRecording();
-          }
-        }
+      if (changed && isCallRecordAutostart(activeCall)) {
+        startRecording(activeCall, true);
       }
     }
-  }
-
-  @Nullable
-  private String getActiveRecordingPhoneNumber() {
-    String activePhoneNumber = null;
-    CallRecording activeRecording = getActiveRecording();
-    if (activeRecording != null) {
-      activePhoneNumber = activeRecording.phoneNumber;
-    } else if (pendingRecordLaunch != null) {
-      activePhoneNumber = pendingRecordLaunch.first;
-    }
-    return activePhoneNumber;
   }
 
   @Override
   public void onDisconnect(final DialerCall call) {
-    String activePhoneNumber = getActiveRecordingPhoneNumber();
-    if (activePhoneNumber != null && TextUtils.equals(call.getNumber(), activePhoneNumber)) {
+    if (TextUtils.equals(call.getId(), recordingCallId)) {
       // finish the current recording if the call gets disconnected
       finishRecording();
     }
 
     // tear down the service if there are no more active calls
-    if (CallList.getInstance().getActiveCall() == null) {
+    if (callList.getActiveCall() == null) {
+      if (recordingCallId != null) {
+        finishRecording();
+      }
       uninitialize();
+      lastActiveCallId = null;
+      lastActiveNumber = null;
     }
   }
 
@@ -373,14 +415,19 @@ public class CallRecorder implements CallList.Listener {
     }
   }
 
-  private boolean isCallRecordAutostart() {
-    // This replicates PreferenceManager.getDefaultSharedPreferences, except
-    // that we need multi process preferences, as the pref is written in a separate
-    // process (com.android.dialer vs. com.android.incallui)
-    final String prefName = context.getPackageName() + "_preferences";
-    final SharedPreferences prefs = context.createDeviceProtectedStorageContext()
-            .getSharedPreferences(prefName, Context.MODE_MULTI_PROCESS);
-
-    return prefs.getBoolean(context.getString(R.string.call_recording_autostart_key), false);
+  private boolean isCallRecordAutostart(DialerCall call) {
+    if (!isEnabled() || context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+        != PackageManager.PERMISSION_GRANTED) {
+      return false;
+    }
+    try {
+      String number = !call.isConferenceCall()
+          && call.getNumberPresentation() == TelecomManager.PRESENTATION_ALLOWED
+          ? call.getNumber() : null;
+      return CallRecordingPreferences.isEnabled(context, number);
+    } catch (RuntimeException e) {
+      Log.w(TAG, "Failed to read auto-recording preference", e);
+      return false;
+    }
   }
 }

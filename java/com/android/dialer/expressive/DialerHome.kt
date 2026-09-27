@@ -56,7 +56,8 @@ fun DialerHome(
     onDelete: (List<RecentCall>, (Boolean) -> Unit) -> Unit,
     onAddContact: (String) -> Unit, onMessage: (String) -> Unit, onSettings: () -> Unit,
     onCopy: (String) -> Unit, onShare: (String) -> Unit, onEditContact: (Person) -> Unit,
-    onPhoto: (String) -> Unit, onRemovePhoto: (String) -> Unit
+    onPhoto: (String) -> Unit, onRemovePhoto: (String) -> Unit,
+    onAutoRecording: (String, Boolean, (Boolean) -> Unit) -> Unit
 ) {
     val labels = listOf(stringResource(R.string.expressive_recents), stringResource(R.string.expressive_favorites),
         stringResource(R.string.expressive_contacts), stringResource(R.string.expressive_voicemail))
@@ -64,6 +65,15 @@ fun DialerHome(
     var recent by remember { mutableStateOf<RecentCallGroup?>(null) }
     var delete by remember { mutableStateOf<RecentCallGroup?>(null) }
     var history by remember { mutableStateOf<RecentCall?>(null) }
+    var recordingNumber by rememberSaveable { mutableStateOf<String?>(null) }
+    var recordingName by rememberSaveable { mutableStateOf("") }
+    fun showRecordings(name: String, number: String) {
+        person = null
+        recent = null
+        history = null
+        recordingName = name
+        recordingNumber = number
+    }
     var expandedGroup by rememberSaveable { mutableStateOf<Long?>(null) }
     var missedOnly by rememberSaveable { mutableStateOf(false) }
     val contacts = remember(data.people, query, tab) {
@@ -152,6 +162,7 @@ fun DialerHome(
                                     RecentCallCard(group, expanded = expandedGroup == group.id,
                                         onExpand = { expandedGroup = if (expandedGroup == group.id) null else group.id },
                                         onActions = { recent = group }, onHistory = { history = call },
+                                        onRecordings = { showRecordings(call.name.ifBlank { call.number }, call.number) },
                                         onCall = { onCall(call.number) }, onRequestDelete = { delete = group },
                                         onDelete = { completed -> onDelete(group.calls, completed) },
                                         modifier = Modifier.animateItem())
@@ -282,9 +293,15 @@ fun DialerHome(
             onVideo = { person = null; onVideo(updated.number) }, onMessage = { person = null; onMessage(updated.number) },
             onFavorite = { onStar(updated) }, onCopy = { onCopy(updated.number); person = null },
             onShare = { person = null; onShare(updated.number) }, onEdit = { person = null; onEditContact(updated) },
-            onPhoto = { onPhoto(updated.number) }, onRemovePhoto = { onRemovePhoto(updated.number) })
+            onPhoto = { onPhoto(updated.number) }, onRemovePhoto = { onRemovePhoto(updated.number) },
+            onRecordings = { showRecordings(updated.name, updated.number) })
     }
-    history?.let { NumberCallHistory(it, data.calls, onDismiss = { history = null }) }
+    history?.let { selected -> NumberCallHistory(selected, data.calls, onDismiss = { history = null },
+        onRecordings = { showRecordings(selected.name.ifBlank { selected.number }, selected.number) }) }
+    recordingNumber?.let { number -> key(number) {
+        NumberCallRecordings(recordingName, number, onDismiss = { recordingNumber = null },
+            onAutoRecording = { enabled, completed -> onAutoRecording(number, enabled, completed) })
+    } }
     recent?.let { selectedGroup ->
         val selected = selectedGroup.latest
         val contact = data.people.firstOrNull { PhoneNumberUtils.compare(it.number, selected.number) }
@@ -295,6 +312,7 @@ fun DialerHome(
             onCopy = { onCopy(selected.number); recent = null }, onShare = { recent = null; onShare(selected.number) },
             onEdit = { recent = null; if (contact != null) onEditContact(contact) else onAddContact(selected.number) },
             onPhoto = { onPhoto(selected.number) }, onRemovePhoto = { onRemovePhoto(selected.number) },
+            onRecordings = { showRecordings(selected.name.ifBlank { selected.number }, selected.number) },
             onDelete = { delete = selectedGroup; recent = null })
         else AlertDialog(onDismissRequest = { recent = null }, title = { Text(selected.displayName()) },
             text = { Text(selected.typeLabel()) }, confirmButton = {

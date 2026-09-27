@@ -121,8 +121,9 @@ public class CallRecorderService extends Service {
 
     if (DBG) Log.d(TAG, "Starting recording");
 
-    mMediaRecorder = new MediaRecorder(getApplicationContext());
+    Uri uri = null;
     try {
+      mMediaRecorder = new MediaRecorder(getApplicationContext());
       int audioSource = getAudioSource();
       int formatChoice = getAudioFormatChoice();
       if (DBG) Log.d(TAG, "Creating media recorder with audio source " + audioSource);
@@ -131,18 +132,12 @@ public class CallRecorderService extends Service {
           ? MediaRecorder.OutputFormat.AMR_WB : MediaRecorder.OutputFormat.MPEG_4);
       mMediaRecorder.setAudioEncoder(formatChoice == 0
           ? MediaRecorder.AudioEncoder.AMR_WB : MediaRecorder.AudioEncoder.AAC);
-    } catch (IllegalStateException e) {
-      Log.e(TAG, "Error initializing media recorder", e);
-      releaseMediaRecorder();
-
-      return false;
-    }
-
-    String fileName = generateFilename(phoneNumber);
-    Uri uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            CallRecording.generateMediaInsertValues(fileName, creationTime));
-
-    try {
+      String fileName = generateFilename(phoneNumber);
+      uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+          CallRecording.generateMediaInsertValues(fileName, creationTime));
+      if (uri == null) {
+        throw new IOException("Could not create recording");
+      }
       try (ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "w")) {
         if (pfd == null) {
           throw new IOException("Opening file for URI " + uri + " failed");
@@ -156,21 +151,11 @@ public class CallRecorderService extends Service {
       mCurrentRecording = new CallRecording(phoneNumber, creationTime,
               fileName, System.currentTimeMillis(), mediaId);
       return true;
-    } catch (IOException | IllegalStateException e) {
+    } catch (IOException | RuntimeException e) {
       Log.w(TAG, "Could not start recording", e);
-      getContentResolver().delete(uri, null, null);
-    } catch (RuntimeException e) {
-      getContentResolver().delete(uri, null, null);
-      // only catch exceptions thrown by the MediaRecorder JNI code
-      if (e.getMessage().indexOf("start failed") >= 0) {
-        Log.w(TAG, "Could not start recording", e);
-      } else {
-        throw e;
-      }
     }
-
-    releaseMediaRecorder();
-
+    if (mMediaRecorder != null) releaseMediaRecorder();
+    deleteIncompleteRecording(uri);
     return false;
   }
 
@@ -180,19 +165,38 @@ public class CallRecorderService extends Service {
     if (mMediaRecorder != null) {
       try {
         mMediaRecorder.stop();
-      } catch (IllegalStateException e) {
+      } catch (RuntimeException e) {
         Log.e(TAG, "Exception closing media recorder", e);
+        recording = null;
       }
 
       releaseMediaRecorder();
 
-      Uri uri = ContentUris.withAppendedId(
+      Uri uri = mCurrentRecording == null ? null : ContentUris.withAppendedId(
           MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mCurrentRecording.mediaId);
-      getContentResolver().update(uri, CallRecording.generateCompletedValues(), null, null);
-
       mCurrentRecording = null;
+      if (recording != null && uri != null) {
+        try {
+          if (getContentResolver().update(uri, CallRecording.generateCompletedValues(), null, null) == 0) {
+            recording = null;
+          }
+        } catch (RuntimeException e) {
+          Log.w(TAG, "Could not publish recording", e);
+          recording = null;
+        }
+      }
+      if (recording == null) deleteIncompleteRecording(uri);
     }
     return recording;
+  }
+
+  private void deleteIncompleteRecording(Uri uri) {
+    if (uri == null) return;
+    try {
+      getContentResolver().delete(uri, null, null);
+    } catch (RuntimeException e) {
+      Log.w(TAG, "Could not remove incomplete recording", e);
+    }
   }
 
   @Override

@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.android.dialer.R
+import com.android.dialer.callrecord.CallRecordingPreferences
 import com.android.dialer.callintent.CallInitiationType
 import com.android.dialer.callintent.CallIntentBuilder
 import com.android.dialer.main.MainActivityPeer
@@ -116,6 +117,15 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
                         onEditContact = { person -> launch(Intent(Intent.ACTION_EDIT, person.uri)) },
                         onPhoto = { number -> photoNumber = number; photoPicker.launch("image/*") },
                         onRemovePhoto = { number -> mutate(action = { photos.remove(number) }) },
+                        onAutoRecording = { number, enabled, completed ->
+                            val action: suspend () -> Unit = {
+                                withContext(Dispatchers.IO) {
+                                    CallRecordingPreferences.setEnabled(activity, number, enabled)
+                                }
+                            }
+                            if (enabled) write(Manifest.permission.RECORD_AUDIO, completed, action)
+                            else mutate(action, completed)
+                        },
                         onSettings = { launch(Intent(activity, ExpressiveSettingsActivity::class.java)) })
                 }
             }

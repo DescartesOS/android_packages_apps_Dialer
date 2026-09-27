@@ -16,6 +16,7 @@
 
 package com.android.dialer.expressive
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,20 +28,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.android.dialer.R
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun NumberActionsDialog(
     name: String, number: String, starred: Boolean, saved: Boolean,
     onDismiss: () -> Unit, onCall: () -> Unit, onVideo: () -> Unit, onMessage: () -> Unit,
     onFavorite: () -> Unit, onCopy: () -> Unit, onShare: () -> Unit, onEdit: () -> Unit,
-    onPhoto: () -> Unit, onRemovePhoto: () -> Unit, onDelete: (() -> Unit)? = null
+    onPhoto: () -> Unit, onRemovePhoto: () -> Unit, onRecordings: () -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
+    val repository = remember(context) { DialerRepository(context) }
+    val scope = rememberCoroutineScope()
+    var blockState by remember(number) { mutableStateOf<NumberBlockState?>(null) }
+    var confirmBlock by remember(number) { mutableStateOf(false) }
+    var changingBlock by remember(number) { mutableStateOf(false) }
+    LaunchedEffect(number) {
+        blockState = try { repository.blockState(number) }
+        catch (e: CancellationException) { throw e }
+        catch (_: Exception) { NumberBlockState(false, false) }
+    }
     val photoState = rememberCallerPhotoState(number, 512)
     // I still keep here photo in my wallet
     val photo = photoState.image
@@ -77,6 +93,17 @@ internal fun NumberActionsDialog(
                         stringResource(if (!saved) R.string.expressive_save else if (starred) R.string.expressive_unfavorite else R.string.expressive_favorite),
                         Modifier.weight(1f), onFavorite)
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NumberAction(DialerSymbol.Record, stringResource(R.string.expressive_call_recording),
+                        Modifier.weight(1f), onRecordings, enabled = number.isNotBlank())
+                    NumberAction(if (blockState?.blocked == true) DialerSymbol.Phone else DialerSymbol.Block,
+                        stringResource(if (blockState?.blocked == true) R.string.expressive_unblock_number else R.string.expressive_block_number),
+                        Modifier.weight(1f), { confirmBlock = true },
+                        enabled = blockState?.available == true && !changingBlock)
+                }
+                if (blockState?.available == false) Text(stringResource(R.string.expressive_block_unavailable),
+                    Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                     FilledIconButton(onClick = onCopy, modifier = Modifier.size(56.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
@@ -102,11 +129,36 @@ internal fun NumberActionsDialog(
             }
         }
     }
+    if (confirmBlock) {
+        val block = blockState?.blocked != true
+        AlertDialog(onDismissRequest = { if (!changingBlock) confirmBlock = false },
+            title = { Text(stringResource(if (block) R.string.expressive_block_number else R.string.expressive_unblock_number)) },
+            text = { Text(stringResource(if (block) R.string.expressive_block_number_body else R.string.expressive_unblock_number_body, number)) },
+            confirmButton = {
+                TextButton(enabled = !changingBlock, onClick = {
+                    changingBlock = true
+                    scope.launch {
+                        try {
+                            blockState = repository.setBlocked(number, block)
+                            confirmBlock = false
+                        } catch (e: CancellationException) { throw e }
+                        catch (_: Exception) {
+                            Toast.makeText(context, R.string.expressive_action_failed, Toast.LENGTH_LONG).show()
+                        } finally { changingBlock = false }
+                    }
+                }) { Text(stringResource(if (block) R.string.expressive_block_number else R.string.expressive_unblock_number)) }
+            },
+            dismissButton = {
+                TextButton(enabled = !changingBlock, onClick = { confirmBlock = false }) {
+                    Text(stringResource(R.string.expressive_cancel))
+                }
+            })
+    }
 }
 
 @Composable
-private fun NumberAction(icon: DialerSymbol, label: String, modifier: Modifier, onClick: () -> Unit) {
-    ExpressiveTile(onClick, modifier, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+private fun NumberAction(icon: DialerSymbol, label: String, modifier: Modifier, onClick: () -> Unit, enabled: Boolean = true) {
+    ExpressiveTile(onClick, modifier, enabled = enabled, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
         Symbol(icon, modifier = Modifier.size(20.dp))
         Text(label, Modifier.padding(start = 10.dp), style = MaterialTheme.typography.labelLarge)
     }
