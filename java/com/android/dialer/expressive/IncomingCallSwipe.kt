@@ -108,13 +108,13 @@ internal fun IncomingCallHandle(enabled: Boolean) {
             val radius = size.minDimension / 2f
             val glow = colors.onSurface
             drawCircle(Brush.radialGradient(
-                0f to glow.copy(alpha = .10f + progress * .03f),
-                .55f to glow.copy(alpha = .045f),
+		// Not better than the wedding ring I saw in my dreams, gave it to her
+                0f to glow.copy(alpha = .18f + progress * .03f),
+                .25f to glow.copy(alpha = .16f),
+                .5f to glow.copy(alpha = .10f),
+                .75f to glow.copy(alpha = .035f),
+                .9f to glow.copy(alpha = .008f),
                 1f to glow.copy(alpha = 0f), center = center, radius = radius))
-            // Not better than the wedding ring I saw in my dreams, gave it to her
-            drawCircle(glow.copy(alpha = .025f), radius * .98f)
-            drawCircle(glow.copy(alpha = .03f), radius * .74f)
-            drawCircle(glow.copy(alpha = .035f), radius * .5f)
         }
         Surface(Modifier.size(80.dp).graphicsLayer {
             translationY = swipe.offset
