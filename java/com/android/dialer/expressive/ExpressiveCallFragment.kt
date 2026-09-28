@@ -309,7 +309,14 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     }
     private fun clickControl(id: Int) {
         when (id) {
-            BUTTON_AUDIO -> showAudioRouteSelector()
+            BUTTON_AUDIO -> {
+                val audioState = buttonDelegate.currentAudioState
+                if (audioState.supportedRouteMask and CallAudioState.ROUTE_BLUETOOTH == 0) {
+                    buttonDelegate.toggleSpeakerphone()
+                } else {
+                    showAudioRouteSelector()
+                }
+            }
             BUTTON_MUTE -> buttonDelegate.muteClicked(audio?.isMuted != true, true)
             BUTTON_DIALPAD -> buttonDelegate.showDialpadClicked(true)
             BUTTON_HOLD -> buttonDelegate.holdClicked(!held)
