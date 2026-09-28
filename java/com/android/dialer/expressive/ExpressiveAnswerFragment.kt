@@ -17,6 +17,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.android.dialer.expressive
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import androidx.compose.foundation.layout.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
 import com.android.dialer.R
 import com.android.incallui.answer.protocol.*
 
@@ -37,6 +39,19 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     private var responses by mutableStateOf<List<String>>(emptyList())
     private var showResponses by mutableStateOf(false)
     private var takingAction by mutableStateOf(false)
+    private var separateCallButtons by mutableStateOf(false)
+    private lateinit var preferences: SharedPreferences
+    private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        if (key == null || key == SEPARATE_CALL_BUTTONS) {
+            separateCallButtons = prefs.getBoolean(SEPARATE_CALL_BUTTONS, false)
+        }
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
+        separateCallButtons = preferences.getBoolean(SEPARATE_CALL_BUTTONS, false)
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         answerDelegate = (requireActivity() as AnswerScreenDelegateFactory).newAnswerScreenDelegate(this)
         super.onViewCreated(view, savedInstanceState)
@@ -47,18 +62,36 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
         answerDelegate.onAnswerScreenUnready()
         super.onDestroyView()
     }
+    override fun onDestroy() {
+        preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
+        super.onDestroy()
+    }
+    private fun answerCall() {
+        if (takingAction || showResponses) return
+        takingAction = true
+        answerDelegate.onAnswer(false)
+    }
+    private fun rejectCall() {
+        if (takingAction || showResponses) return
+        takingAction = true
+        answerDelegate.onReject()
+    }
     @Composable
     override fun CallGestureContainer(content: @Composable () -> Unit) {
-        IncomingCallSwipe(enabled = !takingAction && !showResponses,
-            onAnswer = { if (!takingAction) { takingAction = true; answerDelegate.onAnswer(false) } },
-            onReject = { if (!takingAction) { takingAction = true; answerDelegate.onReject() } }, content = content)
+        if (separateCallButtons) {
+            content()
+        } else {
+            IncomingCallSwipe(enabled = !takingAction && !showResponses,
+                onAnswer = ::answerCall, onReject = ::rejectCall, content = content)
+        }
     }
     @Composable
     override fun AnswerActions() {
         LaunchedEffect(takingAction) {
             if (takingAction) { kotlinx.coroutines.delay(5000); takingAction = false }
         }
-        IncomingCallHandle(enabled = !takingAction && !showResponses)
+        val actionsEnabled = !takingAction && !showResponses
+        if (!separateCallButtons) IncomingCallHandle(enabled = actionsEnabled)
         if (primaryInfoState.answeringDisconnectsOngoingCall()) Text(stringResource(R.string.expressive_answer_ends_call), Modifier.padding(12.dp))
         if (allowAnswerAndRelease()) TextButton(onClick = { takingAction = true; answerDelegate.onAnswerAndReleaseCall() }, enabled = !takingAction) {
             Text(stringResource(R.string.expressive_answer_release))
@@ -71,6 +104,9 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)) {
             Text(stringResource(R.string.expressive_reply))
         }
+        if (separateCallButtons) IncomingCallButtons(
+            enabled = actionsEnabled, onAnswer = ::answerCall, onReject = ::rejectCall,
+            modifier = Modifier.padding(top = 28.dp, bottom = 24.dp))
         if (takingAction) Text(stringResource(R.string.expressive_connecting), Modifier.padding(8.dp)
             .semantics { liveRegion = LiveRegionMode.Polite })
         if (showResponses) ModalBottomSheet(onDismissRequest = { showResponses = false }) {
@@ -92,6 +128,7 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     override fun dismissPendingDialogs() { showResponses = false }
     override fun getAnswerScreenFragment(): Fragment = this
     companion object {
+        private const val SEPARATE_CALL_BUTTONS = "separate_call_buttons"
         @JvmStatic fun create(callId: String, release: Boolean) = ExpressiveAnswerFragment().apply {
             arguments = Bundle().apply { putString("call_id", callId); putBoolean("release", release) }
         }

@@ -22,6 +22,7 @@ import android.app.Activity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.preference.PreferenceManager;
 
 import com.android.incallui.util.AccessibilityUtil;
 
@@ -48,6 +49,9 @@ public class AnswerMethodFactory {
   }
 
   private static boolean needTwoButton(@NonNull Activity activity) {
-    return AccessibilityUtil.isTouchExplorationEnabled(activity) || activity.isInMultiWindowMode();
+    return PreferenceManager.getDefaultSharedPreferences(activity)
+            .getBoolean("separate_call_buttons", false)
+        || AccessibilityUtil.isTouchExplorationEnabled(activity)
+        || activity.isInMultiWindowMode();
   }
 }

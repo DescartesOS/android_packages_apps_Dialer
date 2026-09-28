@@ -53,4 +53,11 @@
       android:defaultValue="true"
       app:iconSpaceReserved="false"/>
 
+  <SwitchPreferenceCompat
+      android:key="separate_call_buttons"
+      android:title="@string/expressive_separate_call_buttons"
+      android:summary="@string/expressive_separate_call_buttons_summary"
+      android:defaultValue="false"
+      app:iconSpaceReserved="false"/>
+
 </PreferenceScreen>
