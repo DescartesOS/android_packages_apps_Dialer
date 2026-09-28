@@ -25,8 +25,11 @@ import android.provider.BlockedNumberContract
 import android.provider.BlockedNumberContract.BlockedNumbers
 import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.telecom.PhoneAccountHandle
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
+import com.android.dialer.telecom.TelecomUtil
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -51,6 +54,7 @@ class DialerRepository(private val context: Context) {
             ?: telephony?.simCountryIso?.takeIf { it.isNotBlank() }
             ?: Locale.getDefault().country).uppercase(Locale.ROOT)
         val numberKeys = mutableMapOf<String, String>()
+        val simNumbers = mutableMapOf<PhoneAccountHandle, Int?>()
         if (contactsAllowed) context.contentResolver.query(Phone.CONTENT_URI,
             arrayOf(Phone.CONTACT_ID, Phone.LOOKUP_KEY, Phone.DISPLAY_NAME_PRIMARY, Phone.NUMBER, Phone.STARRED),
             null, null, "${Phone.SORT_KEY_PRIMARY} ASC")?.use { cursor ->
@@ -61,16 +65,35 @@ class DialerRepository(private val context: Context) {
             }
         }
         if (callsAllowed) context.contentResolver.query(Calls.CONTENT_URI,
-            arrayOf(Calls._ID, Calls.CACHED_NAME, Calls.NUMBER, Calls.DATE, Calls.DURATION, Calls.TYPE, Calls.NUMBER_PRESENTATION),
+            arrayOf(Calls._ID, Calls.CACHED_NAME, Calls.NUMBER, Calls.DATE, Calls.DURATION, Calls.TYPE,
+                Calls.NUMBER_PRESENTATION, Calls.PHONE_ACCOUNT_COMPONENT_NAME, Calls.PHONE_ACCOUNT_ID),
             "${Calls.TYPE} != ?", arrayOf(Calls.VOICEMAIL_TYPE.toString()), "${Calls.DATE} DESC, ${Calls._ID} DESC")?.use { cursor ->
             while (cursor.moveToNext()) {
                 val number = cursor.getString(2).orEmpty()
+                val account = TelecomUtil.composePhoneAccountHandle(cursor.getString(7), cursor.getString(8))
+                val simNumber = account?.let {
+                    if (!simNumbers.containsKey(it)) simNumbers[it] = resolveSimNumber(it)
+                    simNumbers[it]
+                }
                 calls += RecentCall(cursor.getLong(0), cursor.getString(1).orEmpty(), number,
                     cursor.getLong(3), cursor.getLong(4), cursor.getInt(5), cursor.getInt(6),
-                    numberKeys.getOrPut(number) { recentNumberKey(number, country) })
+                    numberKeys.getOrPut(number) { recentNumberKey(number, country) }, simNumber)
             }
         }
         DialerData(people.distinctBy { it.id to it.number }, calls, contactsAllowed, callsAllowed)
+    }
+    private fun resolveSimNumber(account: PhoneAccountHandle): Int? {
+        if (!has(Manifest.permission.READ_PHONE_STATE)) return null
+        return try {
+            val subscriptionId = context.getSystemService(TelephonyManager::class.java)
+                ?.createForPhoneAccountHandle(account)?.subscriptionId ?: return null
+            if (!SubscriptionManager.isValidSubscriptionId(subscriptionId)) return null
+            val slot = context.getSystemService(SubscriptionManager::class.java)
+                ?.getActiveSubscriptionInfo(subscriptionId)?.simSlotIndex ?: return null
+            slot.takeIf { it >= 0 }?.plus(1)
+        } catch (_: SecurityException) {
+            null
+        }
     }
     suspend fun setStarred(person: Person) = withContext(Dispatchers.IO) {
         context.contentResolver.update(ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, person.id),

@@ -20,7 +20,8 @@ import android.provider.CallLog.Calls
 import android.telephony.PhoneNumberUtils
 
 data class RecentCall(val id: Long, val name: String, val number: String, val date: Long,
-    val duration: Long, val type: Int, val presentation: Int, val numberKey: String = number) {
+    val duration: Long, val type: Int, val presentation: Int, val numberKey: String = number,
+    val simNumber: Int? = null) {
     val callable: Boolean get() = presentation == Calls.PRESENTATION_ALLOWED && number.isNotBlank()
 }
 

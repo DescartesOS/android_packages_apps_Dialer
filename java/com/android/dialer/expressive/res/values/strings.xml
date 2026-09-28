@@ -33,6 +33,7 @@
     <string name="expressive_settings_voicemail_advanced_summary">Configure your carrier voicemail service</string>
     <string name="expressive_clear_number">Clear number</string>
     <string name="expressive_sim_number">SIM %1$d</string>
+    <string name="expressive_sim_unavailable">SIM unavailable</string>
     <string name="expressive_no_calling_accounts">No calling accounts available</string>
     <string name="expressive_phone">Phone</string>
     <string name="expressive_recents">Recents</string>
