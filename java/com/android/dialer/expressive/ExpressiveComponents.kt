@@ -37,6 +37,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterIsInstance
 
 /** Thanks chatgpt, even tho all icons looks bullshit */
 enum class DialerSymbol(val path: String) {
@@ -105,7 +108,21 @@ fun ExpressiveTile(
     content: @Composable RowScope.() -> Unit
 ) {
     val interaction = interactionSource ?: remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
+    val pressed by produceState(false, interaction, enabled) {
+        value = false
+        if (enabled) {
+            interaction.interactions.filterIsInstance<PressInteraction>().collectLatest { event ->
+                when (event) {
+                    is PressInteraction.Press -> value = true
+                    is PressInteraction.Release -> {
+                        delay(120)
+                        value = false
+                    }
+                    is PressInteraction.Cancel -> value = false
+                }
+            }
+        }
+    }
     val scale by animateFloatAsState(if (pressed) .94f else 1f, spring(.6f, 500f), label = "press")
     val radius by animateDpAsState(if (pressed) 16.dp else if (selected) 22.dp else 32.dp, spring(.65f, 500f), label = "shape")
     val background by animateColorAsState(if (pressed && highlightOnPress) MaterialTheme.colorScheme.primary else color,
