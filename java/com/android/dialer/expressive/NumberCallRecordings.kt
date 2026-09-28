@@ -30,6 +30,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.text.format.DateUtils
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +46,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -243,9 +250,13 @@ internal fun NumberCallRecordings(
                             Text(date, style = MaterialTheme.typography.titleSmall)
                             Text(entry.recording.fileName, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                            RecordingPlaybackProgress(
+                                positionMillis = if (active) playback.positionMillis.toLong() else 0L,
+                                durationMillis = if (active && !playback.preparing) playback.durationMillis.toLong()
+                                    else entry.durationSeconds * 1000L,
+                                preparing = active && playback.preparing)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically) {
-                                Text(DateUtils.formatElapsedTime(entry.durationSeconds), style = MaterialTheme.typography.bodyMedium)
                                 FilledTonalButton(onClick = {
                                     if (active) playback.stop() else playback.play(entry.id, entry.uri)
                                 }) {
@@ -254,7 +265,6 @@ internal fun NumberCallRecordings(
                                         Modifier.padding(start = 8.dp))
                                 }
                             }
-                            if (active && playback.preparing) LinearProgressIndicator(Modifier.fillMaxWidth())
                         }
                     }
                 }
@@ -276,4 +286,25 @@ internal fun NumberCallRecordings(
         dismissButton = {
             TextButton(onClick = { confirmRecording = false }) { Text(stringResource(R.string.expressive_cancel)) }
         })
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RecordingPlaybackProgress(positionMillis: Long, durationMillis: Long, preparing: Boolean) {
+    val duration = durationMillis.coerceAtLeast(0L)
+    val position = positionMillis.coerceIn(0L, duration)
+    val fraction = if (duration > 0L) position.toFloat() / duration else 0f
+    val progress by animateFloatAsState(fraction, tween(250, easing = LinearEasing), label = "recording progress")
+    val elapsed = DateUtils.formatElapsedTime(position / 1000L)
+    val total = DateUtils.formatElapsedTime(duration / 1000L)
+    val description = stringResource(R.string.expressive_recording_progress, elapsed, total)
+    Row(Modifier.fillMaxWidth().clearAndSetSemantics {
+        contentDescription = description
+        progressBarRangeInfo = if (preparing) ProgressBarRangeInfo.Indeterminate else ProgressBarRangeInfo(fraction, 0f..1f)
+    }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(elapsed, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        if (preparing) LinearWavyProgressIndicator(modifier = Modifier.weight(1f))
+        else LinearWavyProgressIndicator(progress = { progress }, modifier = Modifier.weight(1f))
+        Text(total, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    }
 }

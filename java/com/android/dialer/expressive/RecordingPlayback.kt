@@ -25,6 +25,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -35,8 +36,23 @@ internal class RecordingPlayback(private val context: Context) {
         private set
     var failed by mutableStateOf(false)
         private set
+    var positionMillis by mutableIntStateOf(0)
+        private set
+    var durationMillis by mutableIntStateOf(0)
+        private set
     private var player: MediaPlayer? = null
     private var focus: AudioFocusRequest? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private val updateProgress = object : Runnable {
+        override fun run() {
+            val current = player ?: return
+            if (preparing) return
+            try {
+                positionMillis = current.currentPosition.coerceIn(0, durationMillis)
+                handler.postDelayed(this, 250L)
+            } catch (_: Exception) { fail() }
+        }
+    }
     private val audio = context.getSystemService(AudioManager::class.java)
     private val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
@@ -58,11 +74,13 @@ internal class RecordingPlayback(private val context: Context) {
                             .setAudioAttributes(attributes)
                             .setOnAudioFocusChangeListener({ change ->
                                 if (player === ready && change != AudioManager.AUDIOFOCUS_GAIN) stop()
-                            }, Handler(Looper.getMainLooper())).build()
+                            }, handler).build()
                         focus = request
                         if (audio.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                            durationMillis = ready.duration.coerceAtLeast(0)
                             ready.start()
                             preparing = false
+                            handler.post(updateProgress)
                         } else fail()
                     } catch (_: Exception) { fail() }
                 }
@@ -82,10 +100,13 @@ internal class RecordingPlayback(private val context: Context) {
     }
 
     fun stop() {
+        handler.removeCallbacks(updateProgress)
         val previous = player
         player = null
         mediaId = null
         preparing = false
+        positionMillis = 0
+        durationMillis = 0
         previous?.setOnPreparedListener(null)
         previous?.setOnCompletionListener(null)
         previous?.setOnErrorListener(null)
