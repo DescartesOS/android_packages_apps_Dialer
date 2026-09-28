@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Material Symbols Rounded by Google: fiber_manual_record, fill 1, weight 400, grade 0, optical size 24.
+    Licensed under Apache-2.0; see ../../material_symbols/LICENSE.
+    Source: google/material-design-icons@bd8cb85bd4bad964fe6918f79665bb40c3a8efef
+    Adapted for Compose tinting; directional navigation icons also mirror in RTL.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <path
+      android:fillColor="@android:color/black"
+      android:pathData="M480,760Q363,760 281.5,678.5Q200,597 200,480Q200,363 281.5,281.5Q363,200 480,200Q597,200 678.5,281.5Q760,363 760,480Q760,597 678.5,678.5Q597,760 480,760Z"/>
+</vector>

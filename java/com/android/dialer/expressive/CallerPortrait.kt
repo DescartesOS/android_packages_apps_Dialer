@@ -65,12 +65,9 @@ internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modif
             Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                 colorFilter = monochromeImageFilter())
         } else {
-            Canvas(Modifier.fillMaxSize()) {
-                val ink = colors.onSecondaryContainer.copy(alpha = .65f)
-                drawCircle(ink, radius = size.minDimension * .16f,
-                    center = Offset(size.width * .5f, size.height * .34f))
-                drawOval(ink, topLeft = Offset(size.width * .22f, size.height * .56f),
-                    size = Size(size.width * .56f, size.height * .52f))
+            Box(contentAlignment = Alignment.Center) {
+                Symbol(DialerSymbol.Person, modifier = Modifier.fillMaxSize(.8f)
+                    .graphicsLayer { alpha = .65f })
             }
         }
     }
