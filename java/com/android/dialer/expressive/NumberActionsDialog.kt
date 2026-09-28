@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 internal fun NumberActionsDialog(
     name: String, number: String, starred: Boolean, saved: Boolean,
     onDismiss: () -> Unit, onCall: () -> Unit, onVideo: () -> Unit, onMessage: () -> Unit,
+    onWhatsApp: () -> Unit,
     onFavorite: () -> Unit, onCopy: () -> Unit, onShare: () -> Unit, onEdit: () -> Unit,
     onPhoto: () -> Unit, onRemovePhoto: () -> Unit, onRecordings: () -> Unit,
     onDelete: (() -> Unit)? = null
@@ -87,6 +88,8 @@ internal fun NumberActionsDialog(
                     NumberAction(DialerSymbol.Phone, stringResource(R.string.expressive_call), Modifier.weight(1f), onCall)
                     NumberAction(DialerSymbol.Message, stringResource(R.string.expressive_message), Modifier.weight(1f), onMessage)
                 }
+                NumberAction(DialerSymbol.Message, stringResource(R.string.expressive_whatsapp_message),
+                    Modifier.fillMaxWidth(), onWhatsApp, enabled = number.isNotBlank())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NumberAction(DialerSymbol.Video, stringResource(R.string.expressive_video_call), Modifier.weight(1f), onVideo)
                     NumberAction(if (saved) DialerSymbol.Star else DialerSymbol.Add,

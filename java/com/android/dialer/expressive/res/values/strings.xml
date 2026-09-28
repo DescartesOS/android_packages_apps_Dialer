@@ -65,6 +65,9 @@
     <string name="expressive_call">Call</string>
     <string name="expressive_call_person">Call %1$s</string>
     <string name="expressive_message">Message</string>
+    <string name="expressive_whatsapp_message">Message on WhatsApp</string>
+    <string name="expressive_whatsapp_invalid_number">Couldn’t open this number in WhatsApp. Check the number and country code.</string>
+    <string name="expressive_whatsapp_unavailable">Install WhatsApp to message this number.</string>
     <string name="expressive_favorite">Favorite</string>
     <string name="expressive_unfavorite">Unfavorite</string>
     <string name="expressive_view_contact">View contact</string>

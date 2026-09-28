@@ -37,6 +37,7 @@ import com.android.dialer.R
 import com.android.dialer.callrecord.CallRecordingPreferences
 import com.android.dialer.callintent.CallInitiationType
 import com.android.dialer.callintent.CallIntentBuilder
+import com.android.dialer.location.GeoUtil
 import com.android.dialer.main.MainActivityPeer
 import com.android.dialer.main.impl.MainActivity
 import com.android.dialer.precall.PreCall
@@ -109,6 +110,7 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
                             putExtra(ContactsContract.Intents.Insert.PHONE, number)
                         }) },
                         onMessage = { number -> launch(Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null))) },
+                        onWhatsApp = { number -> openWhatsApp(number) },
                         onCopy = { number -> activity.getSystemService(ClipboardManager::class.java)
                             .setPrimaryClip(ClipData.newPlainText(activity.getString(R.string.expressive_phone), number)) },
                         onShare = { number -> launch(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
@@ -147,6 +149,29 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
         try { activity.startActivity(intent) }
         catch (_: ActivityNotFoundException) { fail() }
         catch (_: SecurityException) { fail(permissionDenied = true) }
+    }
+    private fun openWhatsApp(number: String) {
+        val e164 = if (PhoneNumberUtils.isUriNumber(number)) null else PhoneNumberUtils.formatNumberToE164(
+            PhoneNumberUtils.normalizeNumber(PhoneNumberUtils.extractNetworkPortion(number)),
+            GeoUtil.getCurrentCountryIso(activity))
+        if (e164 == null) {
+            Toast.makeText(activity, R.string.expressive_whatsapp_invalid_number, Toast.LENGTH_LONG).show()
+            return
+        }
+        val uri = Uri.Builder().scheme("whatsapp").authority("send")
+            .appendQueryParameter("phone", e164.removePrefix("+")).build()
+        for (packageName in listOf("com.whatsapp", "com.whatsapp.w4b")) {
+            try {
+                activity.startActivity(Intent(Intent.ACTION_VIEW, uri).setPackage(packageName))
+                return
+            } catch (_: ActivityNotFoundException) {
+                continue
+            } catch (_: SecurityException) {
+                fail(permissionDenied = true)
+                return
+            }
+        }
+        Toast.makeText(activity, R.string.expressive_whatsapp_unavailable, Toast.LENGTH_LONG).show()
     }
     private fun fail(permissionDenied: Boolean = false) = Toast.makeText(activity,
         if (permissionDenied) R.string.expressive_permission_denied else R.string.expressive_action_failed,
