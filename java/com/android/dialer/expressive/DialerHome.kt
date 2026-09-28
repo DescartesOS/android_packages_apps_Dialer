@@ -166,7 +166,7 @@ fun DialerHome(
                                         onRecordings = { showRecordings(call.name.ifBlank { call.number }, call.number) },
                                         onCall = { onCall(call.number) }, onRequestDelete = { delete = group },
                                         onDelete = { completed -> onDelete(group.calls, completed) },
-                                        modifier = Modifier.animateItem())
+                                        modifier = Modifier.animateItem(placementSpec = null))
                                 }
                             }
                         } else {
