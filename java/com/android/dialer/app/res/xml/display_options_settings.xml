@@ -19,6 +19,13 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+  <SwitchPreferenceCompat
+      android:key="monochrome_theme"
+      android:title="@string/expressive_monochrome_theme"
+      android:summary="@string/expressive_monochrome_theme_summary"
+      android:defaultValue="false"
+      app:iconSpaceReserved="false"/>
+
   <ListPreference
       android:dialogTitle="@string/display_options_sort_list_by"
       android:key="@string/display_options_sort_list_by_key"

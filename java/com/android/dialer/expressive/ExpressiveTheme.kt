@@ -19,29 +19,59 @@ package com.android.dialer.expressive
 import android.os.Build
 import android.app.Activity
 import android.content.ContextWrapper
+import android.content.SharedPreferences
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.preference.PreferenceManager
 
 /** Red like her lips */
 internal val EndCallRed = Color(0xFFBA1A1A)
+
+private const val MONOCHROME_THEME = "monochrome_theme"
+private val LocalMonochromeTheme = staticCompositionLocalOf { false }
+private val GrayscaleFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+
+@Composable
+internal fun monochromeImageFilter(): ColorFilter? = if (LocalMonochromeTheme.current) GrayscaleFilter else null
+
+@Composable
+internal fun endCallContainerColor(): Color = if (LocalMonochromeTheme.current) MaterialTheme.colorScheme.primary else EndCallRed
+
+@Composable
+internal fun endCallContentColor(): Color = if (LocalMonochromeTheme.current) MaterialTheme.colorScheme.onPrimary else Color.White
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DialerExpressiveTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
-    val colors = if (Build.VERSION.SDK_INT >= 31) {
+    val preferences = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
+    var monochrome by remember(preferences) { mutableStateOf(preferences.getBoolean(MONOCHROME_THEME, false)) }
+    DisposableEffect(preferences) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key == MONOCHROME_THEME) {
+                monochrome = preferences.getBoolean(MONOCHROME_THEME, false)
+            }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        monochrome = preferences.getBoolean(MONOCHROME_THEME, false)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    val colors = if (monochrome) {
+        if (dark) MonochromeDarkColors else MonochromeLightColors
+    } else if (Build.VERSION.SDK_INT >= 31) {
         if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else if (dark) darkColorScheme() else lightColorScheme()
     val view = LocalView.current
@@ -68,6 +98,6 @@ fun DialerExpressiveTheme(content: @Composable () -> Unit) {
             headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 40.sp),
             titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp)
         ),
-        content = content
+        content = { CompositionLocalProvider(LocalMonochromeTheme provides monochrome, content = content) }
     )
 }

@@ -162,7 +162,8 @@ private fun PreferenceRow(
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
                     Box(contentAlignment = Alignment.Center) {
                         val bitmap = remember(icon) { icon?.toBitmap(96, 96)?.asImageBitmap() }
-                        if (bitmap != null) Image(bitmap, null, Modifier.size(24.dp))
+                        if (bitmap != null) Image(bitmap, null, Modifier.size(24.dp),
+                            colorFilter = monochromeImageFilter())
                         else Symbol(symbol)
                     }
                 }

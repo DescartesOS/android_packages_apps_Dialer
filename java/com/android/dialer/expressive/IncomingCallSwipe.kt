@@ -29,7 +29,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
@@ -94,12 +93,12 @@ internal fun IncomingCallHandle(enabled: Boolean) {
     val background by animateColorAsState(when {
         !feedbackVisible -> colors.inverseSurface
         answering -> colors.primary
-        else -> EndCallRed
+        else -> endCallContainerColor()
     }, spring(.8f, 500f), label = "incoming handle color")
     val foreground by animateColorAsState(when {
         !feedbackVisible -> colors.inverseOnSurface
         answering -> colors.onPrimary
-        else -> Color.White
+        else -> endCallContentColor()
     }, label = "incoming handle icon")
     Box(Modifier.widthIn(max = 280.dp).fillMaxWidth().aspectRatio(1f)
         .graphicsLayer { alpha = if (enabled) 1f else .5f }.clearAndSetSemantics {},

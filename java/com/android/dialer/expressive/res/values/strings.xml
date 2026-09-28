@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2024-2026 Lunaris AOSP. SPDX-License-Identifier: Apache-2.0 -->
 <resources>
-    <string name="expressive_settings_display_summary">Contact name order and caller photos</string>
+    <string name="expressive_settings_display_summary">Theme, contact name order and caller photos</string>
+    <string name="expressive_monochrome_theme">Black &amp; white theme</string>
+    <string name="expressive_monochrome_theme_summary">Use monochrome colors throughout the app. Follows your device’s light or dark theme.</string>
     <string name="expressive_settings_sound_summary">Ringtone, vibration, dialpad tones and call audio</string>
     <string name="expressive_settings_responses_summary">Edit the messages you can send when declining a call</string>
     <string name="expressive_settings_lookup_summary">Find nearby places and identify unknown callers</string>

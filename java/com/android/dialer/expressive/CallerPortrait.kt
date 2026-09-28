@@ -37,7 +37,8 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier) 
     Box(modifier.background(base)) {
         if (photo != null) {
             Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
+                colorFilter = monochromeImageFilter())
         } else {
             Canvas(Modifier.fillMaxSize()) {
                 val unit = size.minDimension
@@ -61,7 +62,8 @@ internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modif
     Surface(modifier, shape = RoundedCornerShape(percent = 35), color = colors.secondaryContainer,
         contentColor = colors.onSecondaryContainer) {
         if (photo != null) {
-            Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+                colorFilter = monochromeImageFilter())
         } else {
             Canvas(Modifier.fillMaxSize()) {
                 val ink = colors.onSecondaryContainer.copy(alpha = .65f)
