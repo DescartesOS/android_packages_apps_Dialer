@@ -21,9 +21,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.geometry.Offset
@@ -68,11 +70,12 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, 
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modifier, @DrawableRes fallbackPhotoResId: Int = 0) {
     val colors = MaterialTheme.colorScheme
     val painter = rememberCallerPhotoPainter(photo, fallbackPhotoResId)
-    Surface(modifier, shape = RoundedCornerShape(percent = 35), color = colors.secondaryContainer,
+    Surface(modifier, shape = MaterialShapes.Cookie9Sided.toShape(), color = colors.secondaryContainer,
         contentColor = colors.onSecondaryContainer) {
         if (painter != null) {
             Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,

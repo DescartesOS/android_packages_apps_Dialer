@@ -157,7 +157,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = if (answering) 0.dp else 88.dp)) {
                     val availableHeight = maxHeight
                     val compactIdentity = dialpad || availableHeight < 520.dp
-                    val avatarSize = minOf(if (compactIdentity) 64.dp else 112.dp, maxWidth / 3)
+                    val avatarSize = minOf(if (compactIdentity) 64.dp else 126.dp, maxWidth / 3) * 1.2f
                     CallerContentLayout(
                         viewportHeight = (availableHeight - 32.dp).coerceAtLeast(0.dp),
                         centerOffset = (if (answering) 0.dp else 44.dp) - 48.dp,
@@ -165,31 +165,35 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                             .padding(horizontal = 24.dp, vertical = 16.dp),
                         header = {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically) {
-                                if (primaryInfoState.isWorkCall()) {
-                                    Symbol(DialerSymbol.Work, modifier = Modifier.size(18.dp))
-                                    Text(stringResource(R.string.expressive_work), Modifier.padding(start = 6.dp),
-                                        style = MaterialTheme.typography.labelLarge)
-                                } else primaryCallState.connectionLabel()?.let {
-                                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = .9f)) {
-                                        Text(it, Modifier.padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium)
+                            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    if (primaryInfoState.isWorkCall()) {
+                                        Symbol(DialerSymbol.Work, modifier = Modifier.size(18.dp))
+                                        Text(stringResource(R.string.expressive_work), Modifier.padding(start = 6.dp),
+                                            style = MaterialTheme.typography.labelLarge)
+                                    } else primaryCallState.connectionLabel()?.let {
+                                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = .9f)) {
+                                            Text(it, Modifier.padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium)
+                                        }
                                     }
+                                }
+                                if (!fullScreenCaller) {
+                                    Spacer(Modifier.height(20.dp))
+                                    CallerNameAndNumber(name, number, compactIdentity)
+                                    Spacer(Modifier.height(16.dp))
+                                    CallStatus()
                                 }
                             }
                         }, identity = {
                             if (!fullScreenCaller) {
                                 RoundedCallerAvatar(photo, Modifier.size(avatarSize), fallbackPhotoResId)
                                 Spacer(Modifier.height(if (compactIdentity) 12.dp else 20.dp))
+                            } else {
+                                CallerNameAndNumber(name, number, compactIdentity)
+                                Spacer(Modifier.height(16.dp))
+                                CallStatus()
                             }
-                            Text(name, Modifier.fillMaxWidth(),
-                                style = if (compactIdentity) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.displaySmall,
-                                fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
-                            if (number.isNotBlank() && name != number) Text(number, Modifier.fillMaxWidth().padding(top = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(16.dp))
-                            CallStatus()
                             if (primaryInfoState.isSpam()) Text(stringResource(R.string.expressive_suspected_spam),
                                 Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.error)
                             primaryInfoState.location()?.takeIf { it.isNotBlank() }?.let {
@@ -244,6 +248,15 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
             onDismiss = { showAudioRoutes = false }, onSelect = { route ->
                 showAudioRoutes = false; buttonDelegate.setAudioRoute(route)
             })
+    }
+    @Composable
+    private fun CallerNameAndNumber(name: String, number: String, compact: Boolean) {
+        Text(name, Modifier.fillMaxWidth(),
+            style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+        if (number.isNotBlank() && name != number) Text(number, Modifier.fillMaxWidth().padding(top = 8.dp),
+            style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     @Composable
     protected open fun AnswerActions() {}
