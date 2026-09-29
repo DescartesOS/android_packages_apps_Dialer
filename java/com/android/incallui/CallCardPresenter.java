@@ -47,6 +47,7 @@ import com.android.contacts.common.ContactsUtils;
 import com.android.dialer.R;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
+import com.android.dialer.contactphoto.CallerPhotoFallbacks;
 import com.android.dialer.contacts.ContactsComponent;
 import com.android.dialer.multimedia.MultimediaData;
 import com.android.dialer.oem.MotorolaUtils;
@@ -600,6 +601,7 @@ public class CallCardPresenter
                       context, primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE)))
               .setNameIsNumber(false)
               .setPhotoType(ContactPhotoType.DEFAULT_PLACEHOLDER)
+              .setFallbackPhotoResId(CallerPhotoFallbacks.forCall(primary.getUniqueCallId()))
               .setIsSipCall(false)
               .setIsContactPhotoShown(showContactPhoto)
               .setIsWorkCall(hasWorkCallProperty)
@@ -649,6 +651,7 @@ public class CallCardPresenter
               .setPhoto(primaryContactInfo.photo)
               .setPhotoUri(primaryContactInfo.displayPhotoUri)
               .setPhotoType(primaryContactInfo.photoType)
+              .setFallbackPhotoResId(CallerPhotoFallbacks.forCall(primary.getUniqueCallId()))
               .setIsSipCall(primaryContactInfo.isSipCall)
               .setIsContactPhotoShown(showContactPhoto)
               .setIsWorkCall(hasWorkCallProperty || isWorkContact)

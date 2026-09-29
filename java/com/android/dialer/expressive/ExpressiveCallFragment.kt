@@ -150,9 +150,10 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 primaryInfoState.photo()?.toBitmap()?.asImageBitmap() else null
         }
         val photo = callerPhoto ?: contactPhoto
+        val fallbackPhotoResId = primaryInfoState.fallbackPhotoResId()
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Box(Modifier.fillMaxSize()) {
-                if (fullScreenCaller) CallerPortrait(photo, Modifier.fillMaxSize())
+                if (fullScreenCaller) CallerPortrait(photo, Modifier.fillMaxSize(), fallbackPhotoResId)
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = if (answering) 0.dp else 88.dp)) {
                     val availableHeight = maxHeight
                     val compactIdentity = dialpad || availableHeight < 520.dp
@@ -178,7 +179,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                             }
                         }, identity = {
                             if (!fullScreenCaller) {
-                                RoundedCallerAvatar(photo, Modifier.size(avatarSize))
+                                RoundedCallerAvatar(photo, Modifier.size(avatarSize), fallbackPhotoResId)
                                 Spacer(Modifier.height(if (compactIdentity) 12.dp else 20.dp))
                             }
                             Text(name, Modifier.fillMaxWidth(),

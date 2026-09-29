@@ -227,8 +227,9 @@ public class ContactGridManager {
     }
 
     boolean hasPhoto =
-        (primaryInfo.photo() != null || primaryInfo.photoUri() != null)
-            && primaryInfo.photoType() == ContactPhotoType.CONTACT;
+        ((primaryInfo.photo() != null || primaryInfo.photoUri() != null)
+            && primaryInfo.photoType() == ContactPhotoType.CONTACT)
+            || primaryInfo.fallbackPhotoResId() != 0;
     if (!hasPhoto && !showAnonymousAvatar) {
       avatarImageView.setVisibility(View.GONE);
       return false;
@@ -340,6 +341,10 @@ public class ContactGridManager {
 
     if (primaryInfo.photoUri() != null) {
       photoInfoBuilder.setPhotoUri(primaryInfo.photoUri().toString());
+    } else if (primaryInfo.fallbackPhotoResId() != 0
+        && (primaryInfo.photo() == null || primaryInfo.photoType() != ContactPhotoType.CONTACT)) {
+      photoInfoBuilder.setPhotoUri(
+          "android.resource://" + context.getPackageName() + "/" + primaryInfo.fallbackPhotoResId());
     }
 
     if (primaryInfo.contactInfoLookupKey() != null) {

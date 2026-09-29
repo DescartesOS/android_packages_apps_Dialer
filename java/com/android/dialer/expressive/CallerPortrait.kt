@@ -16,6 +16,7 @@
 
 package com.android.dialer.expressive
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,15 +29,26 @@ import androidx.compose.ui.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 
 @Composable
-internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier) {
+private fun rememberCallerPhotoPainter(photo: ImageBitmap?, @DrawableRes fallbackPhotoResId: Int): Painter? = when {
+    photo != null -> remember(photo) { BitmapPainter(photo) }
+    fallbackPhotoResId != 0 -> painterResource(fallbackPhotoResId)
+    else -> null
+}
+
+@Composable
+internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, @DrawableRes fallbackPhotoResId: Int = 0) {
     val colors = MaterialTheme.colorScheme
     val base = colors.surfaceContainerLow
+    val painter = rememberCallerPhotoPainter(photo, fallbackPhotoResId)
     Box(modifier.background(base)) {
-        if (photo != null) {
-            Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(),
+        if (painter != null) {
+            Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
                 colorFilter = monochromeImageFilter())
         } else {
@@ -57,12 +69,13 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier) 
 }
 
 @Composable
-internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modifier) {
+internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modifier, @DrawableRes fallbackPhotoResId: Int = 0) {
     val colors = MaterialTheme.colorScheme
+    val painter = rememberCallerPhotoPainter(photo, fallbackPhotoResId)
     Surface(modifier, shape = RoundedCornerShape(percent = 35), color = colors.secondaryContainer,
         contentColor = colors.onSecondaryContainer) {
-        if (photo != null) {
-            Image(photo, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+        if (painter != null) {
+            Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                 colorFilter = monochromeImageFilter())
         } else {
             Box(contentAlignment = Alignment.Center) {

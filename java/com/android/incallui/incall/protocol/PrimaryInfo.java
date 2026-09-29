@@ -20,6 +20,7 @@ package com.android.incallui.incall.protocol;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import com.android.dialer.common.LogUtil;
@@ -55,6 +56,9 @@ public abstract class PrimaryInfo {
   @ContactPhotoType
   public abstract int photoType();
 
+  @DrawableRes
+  public abstract int fallbackPhotoResId();
+
   public abstract boolean isSipCall();
 
   public abstract boolean isContactPhotoShown();
@@ -79,7 +83,7 @@ public abstract class PrimaryInfo {
   public abstract int numberPresentation();
 
   public static Builder builder() {
-    return new AutoValue_PrimaryInfo.Builder();
+    return new AutoValue_PrimaryInfo.Builder().setFallbackPhotoResId(0);
   }
 
   /** Builder class for primary call info. */
@@ -100,6 +104,8 @@ public abstract class PrimaryInfo {
     public abstract Builder setPhotoUri(Uri photoUri);
 
     public abstract Builder setPhotoType(@ContactPhotoType int photoType);
+
+    public abstract Builder setFallbackPhotoResId(@DrawableRes int fallbackPhotoResId);
 
     public abstract Builder setIsSipCall(boolean isSipCall);
 

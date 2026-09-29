@@ -312,7 +312,10 @@ public class InCallFragment extends Fragment
     contactGridManager.setPrimary(primaryInfo);
 
     if (topPhoneContainer != null) {
-      boolean hasPhoto = primaryInfo.photo() != null && primaryInfo.photoType() == ContactPhotoType.CONTACT;
+      boolean hasPhoto =
+          ((primaryInfo.photo() != null || primaryInfo.photoUri() != null)
+              && primaryInfo.photoType() == ContactPhotoType.CONTACT)
+              || primaryInfo.fallbackPhotoResId() != 0;
       if (hasPhoto) {
         topPhoneContainer.setBackgroundColor(0x55000000);
       } else {
