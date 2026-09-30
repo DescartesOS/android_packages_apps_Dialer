@@ -39,6 +39,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -146,6 +147,7 @@ private fun PreferenceRow(
     title: String, summary: String, enabled: Boolean, selectable: Boolean,
     checked: Boolean?, symbol: DialerSymbol, icon: Drawable?, first: Boolean, last: Boolean, onClick: () -> Unit
 ) {
+    val view = LocalView.current
     Surface(modifier = Modifier.padding(bottom = if (last) 0.dp else 1.dp)
         .animateContentSize(spring(.9f, 450f)), shape = RoundedCornerShape(
         topStart = if (first) 28.dp else 0.dp, topEnd = if (first) 28.dp else 0.dp,
@@ -155,7 +157,10 @@ private fun PreferenceRow(
             Row(Modifier.fillMaxWidth().semantics {
                 if (checked != null) toggleableState = ToggleableState(checked)
             }.clickable(enabled = enabled && selectable,
-                role = if (checked != null) Role.Switch else Role.Button, onClick = onClick).padding(20.dp),
+                role = if (checked != null) Role.Switch else Role.Button, onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    onClick()
+                }).padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Surface(Modifier.size(44.dp), shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer,
