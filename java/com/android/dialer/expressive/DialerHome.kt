@@ -77,9 +77,6 @@ fun DialerHome(
     }
     var expandedGroup by rememberSaveable { mutableStateOf<Long?>(null) }
     var missedOnly by rememberSaveable { mutableStateOf(false) }
-    val contacts = remember(data.people, query, tab) {
-        data.people.filter { (tab != 1 || it.starred) && matches(it.name, it.number, query) }
-    }
     val groups = remember(data.recentGroups, query, missedOnly) {
         data.recentGroups.filter { group ->
             group.calls.any { (!missedOnly || it.type == Calls.MISSED_TYPE) && matches(it.name, it.number, query) }
@@ -128,6 +125,9 @@ fun DialerHome(
                 (fadeIn(tween(180)) + slideInHorizontally(spring(.85f, 450f)) { if (targetState > initialState) it / 8 else -it / 8 }) togetherWith
                     (fadeOut(tween(100)) + slideOutHorizontally { if (targetState > initialState) -it / 8 else it / 8 })
             }, label = "page") { page ->
+                val contacts = remember(data.people, query, page) {
+                    data.people.filter { (page != 1 || it.starred) && matches(it.name, it.number, query) }
+                }
                 when {
                     loading -> ExpressiveLoading(stringResource(R.string.expressive_loading))
                     error -> EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_load_failed),
