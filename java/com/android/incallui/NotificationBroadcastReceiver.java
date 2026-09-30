@@ -52,6 +52,10 @@ public class NotificationBroadcastReceiver extends BroadcastReceiver {
 
   public static final String ACTION_HANG_UP_ONGOING_CALL =
       "com.android.incallui.ACTION_HANG_UP_ONGOING_CALL";
+  public static final String ACTION_MUTE_ONGOING_CALL =
+      "com.android.incallui.ACTION_MUTE_ONGOING_CALL";
+  public static final String ACTION_UNMUTE_ONGOING_CALL =
+      "com.android.incallui.ACTION_UNMUTE_ONGOING_CALL";
   public static final String ACTION_ANSWER_VIDEO_INCOMING_CALL =
       "com.android.incallui.ACTION_ANSWER_VIDEO_INCOMING_CALL";
   public static final String ACTION_ANSWER_VOICE_INCOMING_CALL =
@@ -85,6 +89,10 @@ public class NotificationBroadcastReceiver extends BroadcastReceiver {
       declineIncomingCall();
     } else if (action.equals(ACTION_HANG_UP_ONGOING_CALL)) {
       hangUpOngoingCall();
+    } else if (action.equals(ACTION_MUTE_ONGOING_CALL)) {
+      TelecomAdapter.getInstance().mute(true);
+    } else if (action.equals(ACTION_UNMUTE_ONGOING_CALL)) {
+      TelecomAdapter.getInstance().mute(false);
     } else if (action.equals(ACTION_ACCEPT_VIDEO_UPGRADE_REQUEST)) {
       acceptUpgradeRequest(context);
     } else if (action.equals(ACTION_DECLINE_VIDEO_UPGRADE_REQUEST)) {

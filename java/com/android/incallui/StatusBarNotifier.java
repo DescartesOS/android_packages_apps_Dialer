@@ -27,6 +27,8 @@ import static com.android.incallui.NotificationBroadcastReceiver.ACTION_ANSWER_V
 import static com.android.incallui.NotificationBroadcastReceiver.ACTION_DECLINE_INCOMING_CALL;
 import static com.android.incallui.NotificationBroadcastReceiver.ACTION_DECLINE_VIDEO_UPGRADE_REQUEST;
 import static com.android.incallui.NotificationBroadcastReceiver.ACTION_HANG_UP_ONGOING_CALL;
+import static com.android.incallui.NotificationBroadcastReceiver.ACTION_MUTE_ONGOING_CALL;
+import static com.android.incallui.NotificationBroadcastReceiver.ACTION_UNMUTE_ONGOING_CALL;
 import static com.android.incallui.NotificationBroadcastReceiver.ACTION_TURN_OFF_SPEAKER;
 import static com.android.incallui.NotificationBroadcastReceiver.ACTION_TURN_ON_SPEAKER;
 
@@ -420,6 +422,7 @@ public class StatusBarNotifier
         || DialerCallState.isDialing(state)) {
       addHangupAction(builder);
       addSpeakerAction(builder, callAudioState);
+      addMuteAction(builder, callAudioState);
       builder.addExtras(createHangUpExtras());
     } else if (state == DialerCallState.INCOMING || state == DialerCallState.CALL_WAITING) {
       addDismissAction(builder);
@@ -878,6 +881,30 @@ public class StatusBarNotifier
                 Icon.createWithResource(context, R.drawable.quantum_ic_phone_in_talk_vd_theme_24),
                 context.getText(R.string.notification_action_speaker_off),
                 speakerOffPendingIntent)
+            .build());
+  }
+
+  private void addMuteAction(Notification.Builder builder, CallAudioState callAudioState) {
+    boolean isMuted = callAudioState.isMuted();
+    String action = isMuted ? "unmute" : "mute";
+    LogUtil.d(
+        "StatusBarNotifier.addMuteAction",
+        "will show \"" + action + "\" action in the ongoing active call Notification");
+    PendingIntent mutePendingIntent =
+        createNotificationPendingIntent(
+            context, isMuted ? ACTION_UNMUTE_ONGOING_CALL : ACTION_MUTE_ONGOING_CALL);
+    builder.addAction(
+        new Notification.Action.Builder(
+                Icon.createWithResource(
+                    context,
+                    isMuted
+                        ? R.drawable.quantum_ic_mic_vd_theme_24
+                        : R.drawable.quantum_ic_mic_off_vd_theme_24),
+                context.getText(
+                    isMuted
+                        ? R.string.notification_action_unmute
+                        : R.string.notification_action_mute),
+                mutePendingIntent)
             .build());
   }
 
