@@ -20,7 +20,7 @@ package com.android.dialer.phonelookup.cnap;
 import android.content.Context;
 import android.database.Cursor;
 import android.telecom.Call;
-import android.text.TextUtils;
+import android.telecom.TelecomManager;
 
 import com.android.dialer.DialerPhoneNumber;
 import com.android.dialer.common.Assert;
@@ -62,9 +62,18 @@ public final class CnapPhoneLookup implements PhoneLookup<CnapInfo> {
    */
   @Override
   public ListenableFuture<CnapInfo> lookup(Context appContext, Call call) {
+    if (call.getDetails().getHandlePresentation() != TelecomManager.PRESENTATION_ALLOWED
+        || call.getDetails().getCallerDisplayNamePresentation()
+            != TelecomManager.PRESENTATION_ALLOWED) {
+      return Futures.immediateFuture(CnapInfo.getDefaultInstance());
+    }
+
     String callerDisplayName = call.getDetails().getCallerDisplayName();
+    if (callerDisplayName != null) {
+      callerDisplayName = callerDisplayName.trim();
+    }
     return Futures.immediateFuture(
-        TextUtils.isEmpty(callerDisplayName)
+        callerDisplayName == null || callerDisplayName.isEmpty()
             ? CnapInfo.getDefaultInstance()
             : CnapInfo.newBuilder().setName(callerDisplayName).build());
   }

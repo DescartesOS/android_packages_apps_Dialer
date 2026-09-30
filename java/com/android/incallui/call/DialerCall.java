@@ -863,7 +863,18 @@ public class DialerCall implements VideoTechListener {
 
   @Nullable
   public String getCnapName() {
-    return telecomCall == null ? null : getTelecomCall().getDetails().getCallerDisplayName();
+    if (telecomCall == null
+        || getNumberPresentation() != TelecomManager.PRESENTATION_ALLOWED
+        || getCnapNamePresentation() != TelecomManager.PRESENTATION_ALLOWED) {
+      return null;
+    }
+
+    String cnapName = getTelecomCall().getDetails().getCallerDisplayName();
+    if (cnapName == null) {
+      return null;
+    }
+    cnapName = cnapName.trim();
+    return cnapName.isEmpty() ? null : cnapName;
   }
 
   public Bundle getIntentExtras() {

@@ -163,6 +163,8 @@ public class CallerInfoAsyncQuery {
     cw.cookie = cookie;
     cw.number = info.phoneNumber;
     cw.countryIso = info.countryIso;
+    cw.cnapName = info.cnapName;
+    cw.namePresentation = info.namePresentation;
 
     // check to see if these are recognized numbers, and use shortcuts if we can.
     if (PhoneNumberHelper.isEmergencyNumber(context, info.phoneNumber)) {
@@ -270,6 +272,8 @@ public class CallerInfoAsyncQuery {
     public int event;
     public String number;
     public String countryIso;
+    public String cnapName;
+    public int namePresentation;
   }
   /* Directory lookup related code - END */
 
@@ -496,6 +500,11 @@ public class CallerInfoAsyncQuery {
               Log.d(this, "#####async contact look up with numeric username" + callerInfo);
             }
             callerInfo.countryIso = cw.countryIso;
+            callerInfo.namePresentation = cw.namePresentation;
+            if (!callerInfo.contactExists && !TextUtils.isEmpty(cw.cnapName)) {
+              callerInfo.cnapName = cw.cnapName;
+              callerInfo.name = cw.cnapName;
+            }
 
             // Final step: look up the geocoded description.
             if (ENABLE_UNKNOWN_NUMBER_GEO_DESCRIPTION) {

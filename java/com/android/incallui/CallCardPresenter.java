@@ -317,7 +317,18 @@ public class CallCardPresenter
 
   @Override
   public void onDetailsChanged(DialerCall call, Details details) {
+    if (!isInCallScreenReady || inCallScreen == null) {
+      return;
+    }
     updatePrimaryCallState();
+
+    if (!call.isConferenceCall()) {
+      if (primary != null && DialerCall.areSame(primary, call)) {
+        startContactInfoSearch(call, true, call.getState() == DialerCallState.INCOMING);
+      } else if (secondary != null && DialerCall.areSame(secondary, call)) {
+        startContactInfoSearch(call, false, call.getState() == DialerCallState.INCOMING);
+      }
+    }
 
     if (call.can(Details.CAPABILITY_MANAGE_CONFERENCE)
         != details.can(Details.CAPABILITY_MANAGE_CONFERENCE)) {

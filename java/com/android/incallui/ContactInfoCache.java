@@ -58,6 +58,7 @@ import com.android.dialer.phonenumbercache.ContactInfo;
 import com.android.dialer.phonenumbercache.PhoneNumberCache;
 import com.android.dialer.phonenumberutil.PhoneNumberHelper;
 import com.android.dialer.util.MoreStrings;
+import com.android.dialer.util.PermissionsUtil;
 import com.android.incallui.CallerInfoAsyncQuery.OnQueryCompleteListener;
 import com.android.incallui.ContactsAsyncHelper.OnImageLoadCompleteListener;
 import com.android.incallui.bindings.PhoneNumberService;
@@ -89,6 +90,7 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
   // worker thread.
   private final ConcurrentHashMap<String, ContactCacheEntry> infoMap = new ConcurrentHashMap<>();
   private final Map<String, Set<ContactInfoCacheCallback>> callBacks = new ArrayMap<>();
+  private final Map<String, CnapCacheKey> cachedCnapInformation = new ArrayMap<>();
   private int queryId;
   private final DialerExecutor<CnapInformationWrapper> cachedNumberLookupExecutor;
 
@@ -321,6 +323,30 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
     }
   }
 
+  private static final class CnapCacheKey {
+    final String number;
+    final String name;
+
+    CnapCacheKey(String number, String name) {
+      this.number = number;
+      this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (!(object instanceof CnapCacheKey)) {
+        return false;
+      }
+      CnapCacheKey other = (CnapCacheKey) object;
+      return TextUtils.equals(number, other.number) && TextUtils.equals(name, other.name);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(number, name);
+    }
+  }
+
   void maybeInsertCnapInformationIntoCache(
       Context context, final DialerCall call, final CallerInfo info) {
     final CachedNumberLookupService cachedNumberLookupService =
@@ -329,16 +355,27 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
       Log.i(TAG, "User locked, not inserting cnap info into cache");
       return;
     }
+    String number = call.getNumber();
+    String cnapName = info.cnapName;
+    ContactCacheEntry existingEntry = infoMap.get(call.getId());
     if (cachedNumberLookupService == null
-        || TextUtils.isEmpty(info.cnapName)
-        || infoMap.get(call.getId()) != null) {
+        || call.getNumberPresentation() != TelecomManager.PRESENTATION_ALLOWED
+        || info.numberPresentation != TelecomManager.PRESENTATION_ALLOWED
+        || call.getCnapNamePresentation() != TelecomManager.PRESENTATION_ALLOWED
+        || TextUtils.isEmpty(number)
+        || TextUtils.isEmpty(cnapName)
+        || (existingEntry != null && existingEntry.isLocalContact())) {
       return;
     }
+    CnapCacheKey cnapCacheKey = new CnapCacheKey(number, cnapName);
+    if (cnapCacheKey.equals(cachedCnapInformation.get(call.getId()))) {
+      return;
+    }
+    cachedCnapInformation.put(call.getId(), cnapCacheKey);
     Log.i(TAG, "Found contact with CNAP name - inserting into cache");
 
     cachedNumberLookupExecutor.executeParallel(
-        new CnapInformationWrapper(
-            call.getNumber(), info.cnapName, context, cachedNumberLookupService));
+        new CnapInformationWrapper(number, cnapName, context, cachedNumberLookupService));
   }
 
   /**
@@ -361,7 +398,7 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
     final ContactCacheEntry cacheEntry = infoMap.get(callId);
     Set<ContactInfoCacheCallback> callBacks = this.callBacks.get(callId);
 
-    // We need to force a new query if phone number has changed.
+    // Requery whenever the call identity or its presentation snapshot has changed.
     boolean forceQuery = needForceQuery(call, cacheEntry);
     Trace.endSection();
     Log.d(TAG, "findInfo: callId = " + callId + "; forceQuery = " + forceQuery);
@@ -405,28 +442,34 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
      * such as those for voicemail and emergency call information, will not perform an additional
      * asynchronous query.
      */
-    final CallerInfoQueryToken queryToken = new CallerInfoQueryToken(queryId, callId);
+    final CallerInfoQueryToken queryToken = new CallerInfoQueryToken(queryId, call);
     queryId++;
     final CallerInfo callerInfo =
         CallerInfoUtils.getCallerInfoForCall(
             context,
             call,
-            new DialerCallCookieWrapper(callId, call.getNumberPresentation(), call.getCnapName()),
+            new DialerCallCookieWrapper(queryToken),
             new FindInfoCallback(isIncoming, queryToken));
     Trace.endSection();
 
-    if (cacheEntry != null) {
-      // We should not override the old cache item until the new query is
-      // back. We should only update the queryId. Otherwise, we may see
-      // flicker of the name and image (old cache -> new cache before query
-      // -> new cache after query)
-      cacheEntry.queryId = queryToken.queryId;
-      Log.d(TAG, "There is an existing cache. Do not override until new query is back");
+    ContactCacheEntry initialCacheEntry =
+        updateCallerInfoInCacheOnAnyThread(
+            callId, callerInfo.numberPresentation, callerInfo, false, queryToken);
+    if (cacheEntry != null
+        && cacheEntry.isLocalContact()
+        && TextUtils.equals(cacheEntry.queryPhoneNumber, queryToken.phoneNumber)
+        && callerInfo.numberPresentation == TelecomManager.PRESENTATION_ALLOWED) {
+      stampQuery(cacheEntry, queryToken);
+      initialCacheEntry = cacheEntry;
+      Log.d(TAG, "Keeping local contact while refreshing call details");
     } else {
-      ContactCacheEntry initialCacheEntry =
-          updateCallerInfoInCacheOnAnyThread(
-              callId, call.getNumberPresentation(), callerInfo, false, queryToken);
-      sendInfoNotifications(callId, initialCacheEntry);
+      infoMap.put(callId, initialCacheEntry);
+    }
+    sendInfoNotifications(callId, initialCacheEntry);
+
+    if (callerInfo.numberPresentation != TelecomManager.PRESENTATION_ALLOWED
+        || !PermissionsUtil.hasContactsReadPermissions(context)) {
+      clearCallbacks(callId);
     }
     Trace.endSection();
   }
@@ -470,7 +513,7 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
 
     // We always replace the entry. The only exception is the same photo case.
     ContactCacheEntry cacheEntry = buildEntry(context, callerInfo, presentationMode);
-    cacheEntry.queryId = queryToken.queryId;
+    stampQuery(cacheEntry, queryToken);
 
     if (didLocalLookup) {
       if (cacheEntry.displayPhotoUri != null) {
@@ -485,6 +528,8 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
           Log.d(TAG, "Same picture. Do not need start image load.");
           cacheEntry.photo = existingCacheEntry.photo;
           cacheEntry.photoType = existingCacheEntry.photoType;
+          infoMap.put(callId, cacheEntry);
+          Trace.endSection();
           return cacheEntry;
         }
 
@@ -622,6 +667,7 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
   public void clearCache() {
     infoMap.clear();
     callBacks.clear();
+    cachedCnapInformation.clear();
     queryId = 0;
   }
 
@@ -723,6 +769,10 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
     Uri contactRingtoneUri;
     /** Query id to identify the query session. */
     int queryId;
+    String queryPhoneNumber;
+    String queryCnapName;
+    int queryNumberPresentation;
+    int queryNamePresentation;
     /** The phone number without any changes to display to the user (ex: cnap...) */
     String originalPhoneNumber;
 
@@ -783,12 +833,14 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
   private static final class DialerCallCookieWrapper {
     final String callId;
     final int numberPresentation;
+    final int namePresentation;
     final String cnapName;
 
-    DialerCallCookieWrapper(String callId, int numberPresentation, String cnapName) {
-      this.callId = callId;
-      this.numberPresentation = numberPresentation;
-      this.cnapName = cnapName;
+    DialerCallCookieWrapper(CallerInfoQueryToken queryToken) {
+      callId = queryToken.callId;
+      numberPresentation = queryToken.numberPresentation;
+      namePresentation = queryToken.namePresentation;
+      cnapName = queryToken.cnapName;
     }
   }
 
@@ -837,10 +889,12 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
       // Before issuing a request for more data from other services, we only check that the
       // contact wasn't found in the local DB.  We don't check the if the cache entry already
       // has a name because we allow overriding cnap data with data from other services.
-      if (!callerInfo.contactExists && phoneNumberService != null) {
+      if (!callerInfo.contactExists
+          && phoneNumberService != null
+          && cw.namePresentation != TelecomManager.PRESENTATION_RESTRICTED) {
         Log.d(TAG, "Contact lookup. Local contacts miss, checking remote");
         final PhoneNumberServiceListener listener =
-            new PhoneNumberServiceListener(callId, queryToken.queryId);
+            new PhoneNumberServiceListener(callId, queryToken);
         cacheEntry.hasPendingQuery = true;
         phoneNumberService.getPhoneNumberInfo(cacheEntry.number, listener);
       }
@@ -863,28 +917,36 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
   class PhoneNumberServiceListener implements PhoneNumberService.NumberLookupListener {
 
     private final String callId;
-    private final int queryIdOfRemoteLookup;
+    private final CallerInfoQueryToken queryToken;
 
-    PhoneNumberServiceListener(String callId, int queryId) {
+    PhoneNumberServiceListener(String callId, CallerInfoQueryToken queryToken) {
       this.callId = callId;
-      queryIdOfRemoteLookup = queryId;
+      this.queryToken = queryToken;
     }
 
     @Override
     public void onPhoneNumberInfoComplete(final PhoneNumberService.PhoneNumberInfo info) {
       Log.d(TAG, "PhoneNumberServiceListener.onPhoneNumberInfoComplete");
-      if (!isWaitingForThisQuery(callId, queryIdOfRemoteLookup)) {
+      if (!isWaitingForThisQuery(callId, queryToken.queryId)) {
         return;
       }
 
-      // If we got a miss, this is the end of the lookup pipeline,
-      // so clear the callbacks and return.
-      if (info == null) {
+      boolean isStaleCnapResult =
+          info != null
+              && info.getLookupSource() == ContactLookupResult.Type.LOCAL_CACHE_CNAP
+              && (TextUtils.isEmpty(queryToken.cnapName)
+                  || !TextUtils.equals(queryToken.cnapName, info.getDisplayName()));
+
+      if (info == null || isStaleCnapResult) {
+        if (isStaleCnapResult) {
+          Log.d(TAG, "Ignoring stale cached CNAP result.");
+        }
         Log.d(TAG, "Contact lookup done. Remote contact not found.");
         clearCallbacks(callId);
         return;
       }
       ContactCacheEntry entry = new ContactCacheEntry();
+      stampQuery(entry, queryToken);
       entry.namePrimary = info.getDisplayName();
       entry.number = info.getNumber();
       entry.contactLookupResult = info.getLookupSource();
@@ -935,29 +997,56 @@ public class ContactInfoCache implements OnImageLoadCompleteListener {
       return false;
     }
 
-    String newPhoneNumber = PhoneNumberUtils.stripSeparators(call.getNumber());
+    String newPhoneNumber = normalizedNumber(call.getNumber());
     if (cacheEntry == null) {
       // No info in the map yet so it is the 1st query
       Log.d(TAG, "needForceQuery: first query");
       return true;
     }
-    String oldPhoneNumber = PhoneNumberUtils.stripSeparators(cacheEntry.originalPhoneNumber);
+    String oldPhoneNumber = cacheEntry.queryPhoneNumber;
 
     if (!TextUtils.equals(oldPhoneNumber, newPhoneNumber)) {
       Log.d(TAG, "phone number has changed: " + oldPhoneNumber + " -> " + newPhoneNumber);
       return true;
     }
 
+    if (!TextUtils.equals(cacheEntry.queryCnapName, call.getCnapName())
+        || cacheEntry.queryNumberPresentation != call.getNumberPresentation()
+        || cacheEntry.queryNamePresentation != call.getCnapNamePresentation()) {
+      Log.d(TAG, "CNAP or presentation has changed");
+      return true;
+    }
+
     return false;
+  }
+
+  private static String normalizedNumber(String number) {
+    return PhoneNumberUtils.stripSeparators(number);
+  }
+
+  private static void stampQuery(ContactCacheEntry entry, CallerInfoQueryToken queryToken) {
+    entry.queryId = queryToken.queryId;
+    entry.queryPhoneNumber = queryToken.phoneNumber;
+    entry.queryCnapName = queryToken.cnapName;
+    entry.queryNumberPresentation = queryToken.numberPresentation;
+    entry.queryNamePresentation = queryToken.namePresentation;
   }
 
   private static final class CallerInfoQueryToken {
     final int queryId;
     final String callId;
+    final String phoneNumber;
+    final String cnapName;
+    final int numberPresentation;
+    final int namePresentation;
 
-    CallerInfoQueryToken(int queryId, String callId) {
+    CallerInfoQueryToken(int queryId, DialerCall call) {
       this.queryId = queryId;
-      this.callId = callId;
+      callId = call.getId();
+      phoneNumber = normalizedNumber(call.getNumber());
+      cnapName = call.getCnapName();
+      numberPresentation = call.getNumberPresentation();
+      namePresentation = call.getCnapNamePresentation();
     }
   }
 
