@@ -55,6 +55,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.preference.PreferenceManager;
 
 import com.android.contacts.common.widget.SelectPhoneAccountDialogFragment;
 import com.android.dialer.R;
@@ -125,6 +126,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   private static final int DIALPAD_REQUEST_NONE = 1;
   private static final int DIALPAD_REQUEST_SHOW = 2;
   private static final int DIALPAD_REQUEST_HIDE = 3;
+  private static final String PREF_HIDE_CALL_STATUS_BAR = "hide_call_status_bar";
 
   private SelectPhoneAccountListener selectPhoneAccountListener;
   private SupportUiListener<Result> preferredAccountWorkerResultListener;
@@ -177,6 +179,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   @Override
   protected void onCreate(Bundle bundle) {
     Trace.beginSection("InCallActivity.onCreate");
+    updateStatusBarVisibility();
     super.onCreate(bundle);
 
     preferredAccountWorkerResultListener =
@@ -267,6 +270,15 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
 
     getWindow().addFlags(flags);
+  }
+
+  private void updateStatusBarVisibility() {
+    if (PreferenceManager.getDefaultSharedPreferences(this)
+        .getBoolean(PREF_HIDE_CALL_STATUS_BAR, true)) {
+      getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    } else {
+      getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    }
   }
 
   private static int getAudioRoute() {
@@ -446,6 +458,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   protected void onResume() {
     Trace.beginSection("InCallActivity.onResume");
     super.onResume();
+    updateStatusBarVisibility();
 
     if (!InCallPresenter.getInstance().isReadyForTearDown()) {
       updateTaskDescription();

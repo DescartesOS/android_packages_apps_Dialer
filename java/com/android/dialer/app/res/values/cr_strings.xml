@@ -35,6 +35,8 @@
     <!-- Caller layout preference. The stored preference key remains fullscreen_caller_photo. -->
     <string name="fullscreen_caller_photo_title">Full Screen Caller</string>
     <string name="fullscreen_caller_photo_summary">Use a full-screen caller photo or avatar. Turn off to show a rounded avatar above the caller name and number.</string>
+    <string name="hide_call_status_bar_title">Hide status bar on call screen</string>
+    <string name="hide_call_status_bar_summary">Turn off to keep the status bar visible during calls</string>
 
     <!-- Dialer postcall -->
     <string name="enable_post_call_title">Post call snackbar</string>

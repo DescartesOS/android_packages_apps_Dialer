@@ -51,6 +51,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator;
+import androidx.preference.PreferenceManager;
 
 import com.android.dialer.R;
 import com.android.dialer.common.Assert;
@@ -94,6 +95,7 @@ public class SurfaceViewVideoCallFragment extends Fragment
         OnSystemUiVisibilityChangeListener {
 
   private static final String ARG_CALL_ID = "call_id";
+  private static final String PREF_HIDE_CALL_STATUS_BAR = "hide_call_status_bar";
 
   private static final long CAMERA_PERMISSION_DIALOG_DELAY_IN_MILLIS = 2000L;
   private static final long VIDEO_OFF_VIEW_FADE_OUT_DELAY_IN_MILLIS = 2000L;
@@ -301,6 +303,11 @@ public class SurfaceViewVideoCallFragment extends Fragment
   public void onResume() {
     super.onResume();
     LogUtil.i("SurfaceViewVideoCallFragment.onResume", null);
+    if (!shouldHideCallStatusBar()) {
+      View view = requireView();
+      view.setSystemUiVisibility(
+          view.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_FULLSCREEN);
+    }
     inCallScreenDelegate.onInCallScreenResumed();
   }
 
@@ -404,11 +411,17 @@ public class SurfaceViewVideoCallFragment extends Fragment
   private void hideSystemUI() {
     View view = getView();
     if (view != null) {
-      view.setSystemUiVisibility(
-          View.SYSTEM_UI_FLAG_FULLSCREEN
-              | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-              | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+      int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+      if (shouldHideCallStatusBar()) {
+        flags |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+      }
+      view.setSystemUiVisibility(flags);
     }
+  }
+
+  private boolean shouldHideCallStatusBar() {
+    return PreferenceManager.getDefaultSharedPreferences(requireContext())
+        .getBoolean(PREF_HIDE_CALL_STATUS_BAR, true);
   }
 
   private Point getControlsOffsetEndHidden(View controls) {
