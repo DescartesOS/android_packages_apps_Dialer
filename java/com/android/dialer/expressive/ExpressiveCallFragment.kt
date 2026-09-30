@@ -199,7 +199,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                         Symbol(DialerSymbol.Work, modifier = Modifier.size(18.dp))
                                         Text(stringResource(R.string.expressive_work), Modifier.padding(start = 6.dp),
                                             style = MaterialTheme.typography.labelLarge)
-                                    } else primaryCallState.connectionLabel()?.let {
+                                    } else primaryCallState.connectionLabel()?.takeIf { it.isNotBlank() }?.let {
                                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = .9f)) {
                                             Text(it, Modifier.padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium)
                                         }
@@ -312,6 +312,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 primaryCallState.disconnectCause().label?.toString() ?: stringResource(R.string.expressive_call_ended)
             else -> primaryCallState.customLabel() ?: stringResource(R.string.expressive_calling)
         }
+        if (status.isBlank()) return
         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary) {
             Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
