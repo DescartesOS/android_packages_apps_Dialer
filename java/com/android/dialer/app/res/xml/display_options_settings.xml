@@ -60,11 +60,14 @@
       android:defaultValue="true"
       app:iconSpaceReserved="false"/>
 
-  <SwitchPreferenceCompat
-      android:key="separate_call_buttons"
-      android:title="@string/expressive_separate_call_buttons"
-      android:summary="@string/expressive_separate_call_buttons_summary"
-      android:defaultValue="false"
+  <ListPreference
+      android:dialogTitle="@string/expressive_incoming_call_style"
+      android:key="incoming_call_style"
+      android:title="@string/expressive_incoming_call_style"
+      android:summary="@string/expressive_incoming_call_style_summary"
+      android:entries="@array/expressive_incoming_call_style_entries"
+      android:entryValues="@array/expressive_incoming_call_style_values"
+      android:defaultValue="default"
       app:iconSpaceReserved="false"/>
 
 </PreferenceScreen>

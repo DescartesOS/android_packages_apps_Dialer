@@ -39,18 +39,18 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     private var responses by mutableStateOf<List<String>>(emptyList())
     private var showResponses by mutableStateOf(false)
     private var takingAction by mutableStateOf(false)
-    private var separateCallButtons by mutableStateOf(false)
+    private var incomingCallStyle by mutableStateOf(INCOMING_CALL_STYLE_DEFAULT)
     private lateinit var preferences: SharedPreferences
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
-        if (key == null || key == SEPARATE_CALL_BUTTONS) {
-            separateCallButtons = prefs.getBoolean(SEPARATE_CALL_BUTTONS, false)
+        if (key == null || key == INCOMING_CALL_STYLE || key == SEPARATE_CALL_BUTTONS) {
+            incomingCallStyle = readIncomingCallStyle(prefs)
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
-        separateCallButtons = preferences.getBoolean(SEPARATE_CALL_BUTTONS, false)
+        incomingCallStyle = readIncomingCallStyle(preferences)
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         answerDelegate = (requireActivity() as AnswerScreenDelegateFactory).newAnswerScreenDelegate(this)
@@ -78,8 +78,11 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     }
     @Composable
     override fun CallGestureContainer(content: @Composable () -> Unit) {
-        if (separateCallButtons) {
+        if (incomingCallStyle == INCOMING_CALL_STYLE_IOS) {
             content()
+        } else if (incomingCallStyle == INCOMING_CALL_STYLE_GOOGLE) {
+            IncomingCallGoogleSwipe(enabled = !takingAction && !showResponses,
+                onAnswer = ::answerCall, onReject = ::rejectCall, content = content)
         } else {
             IncomingCallSwipe(enabled = !takingAction && !showResponses,
                 onAnswer = ::answerCall, onReject = ::rejectCall, content = content)
@@ -91,7 +94,8 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
             if (takingAction) { kotlinx.coroutines.delay(5000); takingAction = false }
         }
         val actionsEnabled = !takingAction && !showResponses
-        if (!separateCallButtons) IncomingCallHandle(enabled = actionsEnabled)
+        if (incomingCallStyle == INCOMING_CALL_STYLE_DEFAULT) IncomingCallHandle(enabled = actionsEnabled)
+        if (incomingCallStyle == INCOMING_CALL_STYLE_GOOGLE) IncomingCallGoogleHandle(enabled = actionsEnabled)
         if (primaryInfoState.answeringDisconnectsOngoingCall()) Text(stringResource(R.string.expressive_answer_ends_call), Modifier.padding(12.dp))
         if (allowAnswerAndRelease()) TextButton(onClick = { takingAction = true; answerDelegate.onAnswerAndReleaseCall() }, enabled = !takingAction) {
             Text(stringResource(R.string.expressive_answer_release))
@@ -104,7 +108,7 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)) {
             Text(stringResource(R.string.expressive_reply))
         }
-        if (separateCallButtons) IncomingCallButtons(
+        if (incomingCallStyle == INCOMING_CALL_STYLE_IOS) IncomingCallButtons(
             enabled = actionsEnabled, onAnswer = ::answerCall, onReject = ::rejectCall,
             modifier = Modifier.padding(top = 28.dp, bottom = 24.dp))
         if (takingAction) Text(stringResource(R.string.expressive_connecting), Modifier.padding(8.dp)
@@ -128,7 +132,16 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     override fun dismissPendingDialogs() { showResponses = false }
     override fun getAnswerScreenFragment(): Fragment = this
     companion object {
+        private const val INCOMING_CALL_STYLE = "incoming_call_style"
         private const val SEPARATE_CALL_BUTTONS = "separate_call_buttons"
+        private const val INCOMING_CALL_STYLE_DEFAULT = "default"
+        private const val INCOMING_CALL_STYLE_IOS = "ios"
+        private const val INCOMING_CALL_STYLE_GOOGLE = "google"
+        private fun readIncomingCallStyle(prefs: SharedPreferences): String {
+            return prefs.getString(INCOMING_CALL_STYLE, null)
+                ?: if (prefs.getBoolean(SEPARATE_CALL_BUTTONS, false)) INCOMING_CALL_STYLE_IOS
+                else INCOMING_CALL_STYLE_DEFAULT
+        }
         @JvmStatic fun create(callId: String, release: Boolean) = ExpressiveAnswerFragment().apply {
             arguments = Bundle().apply { putString("call_id", callId); putBoolean("release", release) }
         }

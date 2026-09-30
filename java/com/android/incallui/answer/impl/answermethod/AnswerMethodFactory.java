@@ -49,8 +49,15 @@ public class AnswerMethodFactory {
   }
 
   private static boolean needTwoButton(@NonNull Activity activity) {
-    return PreferenceManager.getDefaultSharedPreferences(activity)
-            .getBoolean("separate_call_buttons", false)
+    String incomingCallStyle =
+        PreferenceManager.getDefaultSharedPreferences(activity)
+            .getString("incoming_call_style", null);
+    boolean separateCallButtons =
+        "ios".equals(incomingCallStyle)
+            || (incomingCallStyle == null
+                && PreferenceManager.getDefaultSharedPreferences(activity)
+                    .getBoolean("separate_call_buttons", false));
+    return separateCallButtons
         || AccessibilityUtil.isTouchExplorationEnabled(activity)
         || activity.isInMultiWindowMode();
   }

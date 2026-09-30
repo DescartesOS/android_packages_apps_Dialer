@@ -4,8 +4,22 @@
     <string name="expressive_settings_display_summary">Theme, contact name order, caller photos and call buttons</string>
     <string name="expressive_monochrome_theme">Black &amp; white theme</string>
     <string name="expressive_monochrome_theme_summary">Use neutral backgrounds and main accents while keeping other colors. Follows your device’s light or dark theme.</string>
-    <string name="expressive_separate_call_buttons">Separate call buttons</string>
-    <string name="expressive_separate_call_buttons_summary">Use green Answer and red Decline buttons instead of swiping.</string>
+    <string name="expressive_incoming_call_style">Incoming call style</string>
+    <string name="expressive_incoming_call_style_summary">Choose how to answer or decline incoming calls</string>
+    <string name="expressive_incoming_call_style_default">Default swipe</string>
+    <string name="expressive_incoming_call_style_ios">iOS-style buttons</string>
+    <string name="expressive_incoming_call_style_google">Google Dialer-style slider</string>
+    <string name="expressive_google_swipe_accessibility">Swipe horizontally to answer or decline</string>
+    <string-array name="expressive_incoming_call_style_entries">
+        <item>@string/expressive_incoming_call_style_default</item>
+        <item>@string/expressive_incoming_call_style_ios</item>
+        <item>@string/expressive_incoming_call_style_google</item>
+    </string-array>
+    <string-array name="expressive_incoming_call_style_values" translatable="false">
+        <item>default</item>
+        <item>ios</item>
+        <item>google</item>
+    </string-array>
     <string name="expressive_settings_sound_summary">Ringtone, vibration, dialpad tones and call audio</string>
     <string name="expressive_settings_responses_summary">Edit the messages you can send when declining a call</string>
     <string name="expressive_settings_lookup_summary">Find nearby places and identify unknown callers</string>

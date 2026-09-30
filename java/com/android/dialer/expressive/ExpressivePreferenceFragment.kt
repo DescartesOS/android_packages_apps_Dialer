@@ -213,7 +213,7 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
         key.contains("sort") -> DialerSymbol.Swap
         key.contains("display") -> DialerSymbol.People
         key.contains("mute") -> DialerSymbol.Mic
-        key == "separate_call_buttons" -> DialerSymbol.Phone
+        key == "incoming_call_style" -> DialerSymbol.Phone
         key.contains("proximity") -> DialerSymbol.Phone
         !pref.isSelectable -> DialerSymbol.Info
         else -> DialerSymbol.Settings
