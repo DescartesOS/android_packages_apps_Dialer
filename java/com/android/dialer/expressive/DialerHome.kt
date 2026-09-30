@@ -386,13 +386,15 @@ fun DetailAction(icon: DialerSymbol, title: String, modifier: Modifier, selected
 }
 @Composable
 fun DialerKeypad(onDigit: (String) -> Unit, onLongDigit: (String) -> Unit = onDigit) {
+    val tones = rememberDialpadTones()
     val keys = listOf("1" to "", "2" to "ABC", "3" to "DEF", "4" to "GHI", "5" to "JKL", "6" to "MNO",
         "7" to "PQRS", "8" to "TUV", "9" to "WXYZ", "*" to "", "0" to "+", "#" to "")
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         keys.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { (digit, letters) ->
-                    ExpressiveTile(onClick = { onDigit(digit) }, onLongClick = { onLongDigit(digit) },
+                    ExpressiveTile(onClick = { tones.play(digit); onDigit(digit) },
+                        onLongClick = { tones.play(digit); onLongDigit(digit) },
                         highlightOnPress = true,
                         modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
