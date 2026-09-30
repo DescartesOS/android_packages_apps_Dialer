@@ -76,8 +76,8 @@ internal fun RecentCallCard(
         val colors = MaterialTheme.colorScheme
         if (progress > 0f && (!calling || call.callable)) Surface(
             Modifier.matchParentSize(), shape = shape,
-            color = if (calling) colors.primaryContainer else colors.errorContainer,
-            contentColor = if (calling) colors.onPrimaryContainer else colors.onErrorContainer
+            color = if (calling) AnswerGreen else colors.errorContainer,
+            contentColor = if (calling) Color.White else colors.onErrorContainer
         ) {
             Box(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                 Column(Modifier.align(if (calling) AbsoluteAlignment.CenterLeft else AbsoluteAlignment.CenterRight)
