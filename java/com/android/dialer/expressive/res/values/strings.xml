@@ -6,10 +6,17 @@
     <string name="expressive_monochrome_theme_summary">Use neutral backgrounds and main accents while keeping other colors. Follows your device’s light or dark theme.</string>
     <string name="expressive_incoming_call_style">Incoming call style</string>
     <string name="expressive_incoming_call_style_summary">Choose how to answer or decline incoming calls</string>
+    <string name="expressive_caller_screen_spam_warning">Caller spam warning background</string>
+    <string name="expressive_caller_screen_spam_warning_summary">Show a subtle red or yellow tint for carrier spam warnings</string>
     <string name="expressive_incoming_call_style_default">Default swipe</string>
     <string name="expressive_incoming_call_style_ios">iOS-style buttons</string>
     <string name="expressive_incoming_call_style_google">Google Dialer-style slider</string>
     <string name="expressive_google_swipe_accessibility">Swipe horizontally to answer or decline</string>
+    <string name="expressive_confirmed_spam">Carrier identified spam</string>
+    <string name="expressive_verified_caller">Verified caller</string>
+    <string name="expressive_unverified_caller">Caller not verified</string>
+    <string name="expressive_not_spam">Not spam</string>
+    <string name="expressive_report_spam">Report spam</string>
     <string-array name="expressive_incoming_call_style_entries">
         <item>@string/expressive_incoming_call_style_default</item>
         <item>@string/expressive_incoming_call_style_ios</item>

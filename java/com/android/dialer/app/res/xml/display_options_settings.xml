@@ -60,6 +60,13 @@
       android:defaultValue="true"
       app:iconSpaceReserved="false"/>
 
+  <SwitchPreferenceCompat
+      android:key="caller_screen_spam_warning"
+      android:title="@string/expressive_caller_screen_spam_warning"
+      android:summary="@string/expressive_caller_screen_spam_warning_summary"
+      android:defaultValue="true"
+      app:iconSpaceReserved="false"/>
+
   <ListPreference
       android:dialogTitle="@string/expressive_incoming_call_style"
       android:key="incoming_call_style"

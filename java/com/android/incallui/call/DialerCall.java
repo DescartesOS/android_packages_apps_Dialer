@@ -56,6 +56,8 @@ import com.android.dialer.callintent.CallIntentParser;
 import com.android.dialer.callintent.CallSpecificAppData;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
+import com.android.dialer.spam.CarrierCallIdentity;
+import com.android.dialer.spam.CarrierCallIdentityStore;
 import com.android.dialer.common.concurrent.DefaultFutureCallback;
 import com.android.dialer.compat.telephony.TelephonyManagerCompat;
 import com.android.dialer.location.GeoUtil;
@@ -472,6 +474,10 @@ public class DialerCall implements VideoTechListener {
 
   /* package-private */ Call getTelecomCall() {
     return telecomCall;
+  }
+
+  public Call.Details getTelecomCallDetails() {
+    return telecomCall.getDetails();
   }
 
   public StatusHints getStatusHints() {
@@ -1223,7 +1229,8 @@ public class DialerCall implements VideoTechListener {
   }
 
   public boolean isSpam() {
-    return false;
+    return CarrierCallIdentityStore.get(context, getNumber(), getAccountHandle()).getSpamStatus()
+        == CarrierCallIdentity.SPAM_CONFIRMED;
   }
 
   public boolean isBlocked() {

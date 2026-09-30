@@ -111,6 +111,10 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
         if (incomingCallStyle == INCOMING_CALL_STYLE_IOS) IncomingCallButtons(
             enabled = actionsEnabled, onAnswer = ::answerCall, onReject = ::rejectCall,
             modifier = Modifier.padding(top = 28.dp, bottom = 24.dp))
+        if (primaryInfoState.isSpam() || primaryInfoState.carrierSpamStatus() == com.android.dialer.spam.CarrierCallIdentity.SPAM_CONFIRMED ||
+                primaryInfoState.carrierSpamStatus() == com.android.dialer.spam.CarrierCallIdentity.SPAM_SUSPECTED) {
+            CarrierSpamActionButtons(primaryInfoState.number().orEmpty())
+        }
         if (takingAction) Text(stringResource(R.string.expressive_connecting), Modifier.padding(8.dp)
             .semantics { liveRegion = LiveRegionMode.Polite })
         if (showResponses) ModalBottomSheet(onDismissRequest = { showResponses = false }) {

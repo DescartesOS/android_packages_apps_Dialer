@@ -104,6 +104,9 @@ internal fun NumberActionsDialog(
                         Modifier.weight(1f), { confirmBlock = true },
                         enabled = blockState?.available == true && !changingBlock)
                 }
+                NumberAction(DialerSymbol.Block, stringResource(R.string.expressive_report_spam),
+                    Modifier.fillMaxWidth(), { showCarrierBlockDialog(context, number, true) },
+                    enabled = number.isNotBlank())
                 if (blockState?.available == false) Text(stringResource(R.string.expressive_block_unavailable),
                     Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)

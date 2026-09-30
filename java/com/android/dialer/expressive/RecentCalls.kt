@@ -18,10 +18,13 @@ package com.android.dialer.expressive
 
 import android.provider.CallLog.Calls
 import android.telephony.PhoneNumberUtils
+import com.android.dialer.spam.CarrierCallIdentity
 
 data class RecentCall(val id: Long, val name: String, val number: String, val date: Long,
     val duration: Long, val type: Int, val presentation: Int, val numberKey: String = number,
-    val simNumber: Int? = null) {
+    val simNumber: Int? = null,
+    val spamStatus: Int = CarrierCallIdentity.SPAM_UNKNOWN,
+    val verificationStatus: Int = CarrierCallIdentity.VERIFICATION_UNKNOWN) {
     val callable: Boolean get() = presentation == Calls.PRESENTATION_ALLOWED && number.isNotBlank()
 }
 

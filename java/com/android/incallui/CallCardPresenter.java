@@ -54,6 +54,9 @@ import com.android.dialer.oem.MotorolaUtils;
 import com.android.dialer.phonenumberutil.PhoneNumberHelper;
 import com.android.dialer.postcall.PostCall;
 import com.android.dialer.preferredsim.suggestion.SuggestionProvider;
+import com.android.dialer.spam.CarrierCallIdentity;
+import com.android.dialer.spam.CarrierCallIdentityProvider;
+import com.android.dialer.spam.CarrierCallIdentityStore;
 import com.android.incallui.ContactInfoCache.ContactCacheEntry;
 import com.android.incallui.ContactInfoCache.ContactInfoCacheCallback;
 import com.android.incallui.InCallPresenter.InCallDetailsListener;
@@ -598,6 +601,7 @@ public class CallCardPresenter
 
     // DialerCall placed through a work phone account.
     boolean hasWorkCallProperty = primary.hasProperty(PROPERTY_ENTERPRISE_CALL);
+    CarrierCallIdentity carrierIdentity = getCarrierCallIdentity(primary);
 
     MultimediaData multimediaData = null;
     if (primary.isConferenceCall()) {
@@ -617,6 +621,8 @@ public class CallCardPresenter
               .setIsContactPhotoShown(showContactPhoto)
               .setIsWorkCall(hasWorkCallProperty)
               .setIsSpam(false)
+              .setCarrierSpamStatus(CarrierCallIdentity.SPAM_UNKNOWN)
+              .setCallerVerificationStatus(CarrierCallIdentity.VERIFICATION_UNKNOWN)
               .setIsLocalContact(false)
               .setAnsweringDisconnectsOngoingCall(false)
               .setShowInCallButtonGrid(true)
@@ -667,6 +673,8 @@ public class CallCardPresenter
               .setIsContactPhotoShown(showContactPhoto)
               .setIsWorkCall(hasWorkCallProperty || isWorkContact)
               .setIsSpam(primary.isSpam())
+              .setCarrierSpamStatus(carrierIdentity.getSpamStatus())
+              .setCallerVerificationStatus(carrierIdentity.getVerificationStatus())
               .setIsLocalContact(primaryContactInfo.isLocalContact())
               .setAnsweringDisconnectsOngoingCall(primary.answeringDisconnectsForegroundVideoCall())
               .setContactInfoLookupKey(primaryContactInfo.lookupKey)
@@ -684,6 +692,17 @@ public class CallCardPresenter
     } else {
       LogUtil.i("CallCardPresenter.updatePrimaryDisplayInfo", "UI not ready, not showing location");
     }
+  }
+
+  private CarrierCallIdentity getCarrierCallIdentity(DialerCall call) {
+    CarrierCallIdentity stored =
+        CarrierCallIdentityStore.get(
+            context,
+            call.getHandle() == null ? null : call.getHandle().getSchemeSpecificPart(),
+            call.getTelecomCallDetails().getAccountHandle());
+    CarrierCallIdentity platform =
+        CarrierCallIdentityProvider.get(context).identify(context, call.getTelecomCallDetails());
+    return stored.merge(platform);
   }
 
   private static boolean shouldShowLocationAsLabel(

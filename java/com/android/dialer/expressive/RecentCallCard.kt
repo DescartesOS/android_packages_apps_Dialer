@@ -30,6 +30,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.*
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.dialer.R
+import com.android.dialer.spam.CarrierCallIdentity
 import kotlin.math.abs
 
 @Composable
@@ -115,6 +117,19 @@ internal fun RecentCallCard(
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
                             color = if (call.type == Calls.MISSED_TYPE) colors.error else colors.onSurface)
+                        if (call.spamStatus == CarrierCallIdentity.SPAM_CONFIRMED ||
+                            call.spamStatus == CarrierCallIdentity.SPAM_SUSPECTED) {
+                            Text(stringResource(if (call.spamStatus == CarrierCallIdentity.SPAM_CONFIRMED)
+                                R.string.expressive_confirmed_spam else R.string.expressive_suspected_spam),
+                                color = if (call.spamStatus == CarrierCallIdentity.SPAM_CONFIRMED) colors.error else Color(0xFFB26A00),
+                                style = MaterialTheme.typography.labelSmall)
+                        } else if (call.verificationStatus == CarrierCallIdentity.VERIFICATION_VERIFIED) {
+                            Text(stringResource(R.string.expressive_verified_caller), color = Color(0xFF16834B),
+                                style = MaterialTheme.typography.labelSmall)
+                        } else if (call.spamStatus == CarrierCallIdentity.SPAM_NOT_SPAM) {
+                            Text(stringResource(R.string.expressive_not_spam), color = colors.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelSmall)
+                        }
                         Text(call.typeLabel() + " · " + DateUtils.formatDateTime(LocalContext.current,
                             call.date, DateUtils.FORMAT_SHOW_TIME), style = MaterialTheme.typography.bodySmall,
                             color = colors.onSurfaceVariant)

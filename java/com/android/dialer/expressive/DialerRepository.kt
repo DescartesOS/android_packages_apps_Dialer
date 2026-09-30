@@ -30,6 +30,7 @@ import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 import com.android.dialer.telecom.TelecomUtil
+import com.android.dialer.spam.CarrierCallIdentityStore
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,9 +76,11 @@ class DialerRepository(private val context: Context) {
                     if (!simNumbers.containsKey(it)) simNumbers[it] = resolveSimNumber(it)
                     simNumbers[it]
                 }
+                val identity = CarrierCallIdentityStore.get(context, number, account)
                 calls += RecentCall(cursor.getLong(0), cursor.getString(1).orEmpty(), number,
                     cursor.getLong(3), cursor.getLong(4), cursor.getInt(5), cursor.getInt(6),
-                    numberKeys.getOrPut(number) { recentNumberKey(number, country) }, simNumber)
+                    numberKeys.getOrPut(number) { recentNumberKey(number, country) }, simNumber,
+                    identity.getSpamStatus(), identity.getVerificationStatus())
             }
         }
         DialerData(people.distinctBy { it.id to it.number }, calls, contactsAllowed, callsAllowed)

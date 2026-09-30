@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import com.android.dialer.spam.CarrierCallIdentity
 
 @Composable
 private fun rememberCallerPhotoPainter(photo: ImageBitmap?, @DrawableRes fallbackPhotoResId: Int): Painter? = when {
@@ -44,7 +45,8 @@ private fun rememberCallerPhotoPainter(photo: ImageBitmap?, @DrawableRes fallbac
 }
 
 @Composable
-internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, @DrawableRes fallbackPhotoResId: Int = 0) {
+internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, @DrawableRes fallbackPhotoResId: Int = 0,
+    carrierSpamStatus: Int = CarrierCallIdentity.SPAM_UNKNOWN) {
     val colors = MaterialTheme.colorScheme
     val base = colors.surfaceContainerLow
     val painter = rememberCallerPhotoPainter(photo, fallbackPhotoResId)
@@ -66,7 +68,20 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, 
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0f to base.copy(alpha = .9f), .22f to base.copy(alpha = .7f),
             .38f to base.copy(alpha = .18f), .6f to base.copy(alpha = .86f), .78f to base, 1f to base)))
+        CarrierSpamWarningOverlay(carrierSpamStatus, Modifier.fillMaxSize())
     }
+}
+
+@Composable
+internal fun CarrierSpamWarningOverlay(status: Int, modifier: Modifier = Modifier) {
+    val warning = when (status) {
+        CarrierCallIdentity.SPAM_CONFIRMED -> Color(0xFFE53935)
+        CarrierCallIdentity.SPAM_SUSPECTED -> Color(0xFFFFB300)
+        else -> null
+    }
+    if (warning != null) Box(modifier.background(Brush.verticalGradient(
+        0f to warning.copy(alpha = .06f), .52f to warning.copy(alpha = .16f),
+        1f to warning.copy(alpha = .28f))))
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

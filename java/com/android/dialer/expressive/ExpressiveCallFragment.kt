@@ -58,6 +58,7 @@ import com.android.incallui.incall.protocol.InCallButtonIds.*
 import com.android.incallui.call.state.DialerCallState
 import com.android.incallui.audioroute.AudioRouteSelectorDialogFragment.AudioRouteSelectorPresenter
 import kotlinx.coroutines.delay
+import com.android.dialer.spam.CarrierCallIdentity
 
 open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, AudioRouteSelectorPresenter {
     protected var primaryInfoState by mutableStateOf(PrimaryInfo.empty())
@@ -139,12 +140,28 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         return enabled
     }
     @Composable
+    private fun rememberCallerSpamWarning(): Boolean {
+        val context = LocalContext.current
+        val preferences = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
+        var enabled by remember(preferences) { mutableStateOf(preferences.getBoolean("caller_screen_spam_warning", true)) }
+        DisposableEffect(preferences) {
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == null || key == "caller_screen_spam_warning")
+                    enabled = preferences.getBoolean("caller_screen_spam_warning", true)
+            }
+            preferences.registerOnSharedPreferenceChangeListener(listener)
+            onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
+        return enabled
+    }
+    @Composable
     private fun CallContent() {
         val name = primaryInfoState.name()?.takeIf { it.isNotBlank() } ?: primaryInfoState.number()?.takeIf { it.isNotBlank() }
             ?: stringResource(R.string.expressive_unknown)
         val number = if (primaryInfoState.numberPresentation() == android.provider.CallLog.Calls.PRESENTATION_ALLOWED)
             primaryInfoState.number().orEmpty() else ""
         val fullScreenCaller = rememberFullScreenCaller()
+        val callerSpamWarning = rememberCallerSpamWarning()
         val callerPhoto = rememberCallerPhoto(number, maxSize = if (fullScreenCaller) 1600 else 512)
         val contactPhoto = remember(primaryInfoState.photo(), primaryInfoState.photoType(), number) {
             if (number.isNotBlank() && primaryInfoState.photoType() == ContactPhotoType.CONTACT)
@@ -154,7 +171,16 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         val fallbackPhotoResId = primaryInfoState.fallbackPhotoResId()
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Box(Modifier.fillMaxSize()) {
-                if (fullScreenCaller) CallerPortrait(photo, Modifier.fillMaxSize(), fallbackPhotoResId)
+                if (fullScreenCaller) CallerPortrait(photo, Modifier.fillMaxSize(), fallbackPhotoResId,
+                    if (callerSpamWarning && primaryInfoState.isSpam()) CarrierCallIdentity.SPAM_CONFIRMED
+                    else if (callerSpamWarning)
+                        primaryInfoState.carrierSpamStatus()
+                    else CarrierCallIdentity.SPAM_UNKNOWN)
+                if (callerSpamWarning && !fullScreenCaller) {
+                    CarrierSpamWarningOverlay(
+                        if (primaryInfoState.isSpam()) CarrierCallIdentity.SPAM_CONFIRMED
+                        else primaryInfoState.carrierSpamStatus(), Modifier.fillMaxSize())
+                }
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = if (answering) 0.dp else 88.dp)) {
                     val availableHeight = maxHeight
                     val compactIdentity = dialpad || availableHeight < 520.dp
@@ -195,8 +221,17 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                 Spacer(Modifier.height(16.dp))
                                 CallStatus()
                             }
-                            if (primaryInfoState.isSpam()) Text(stringResource(R.string.expressive_suspected_spam),
-                                Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.error)
+                            val spamStatus = primaryInfoState.carrierSpamStatus()
+                            if (primaryInfoState.isSpam() || spamStatus == CarrierCallIdentity.SPAM_CONFIRMED)
+                                Text(stringResource(R.string.expressive_confirmed_spam), Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.error)
+                            else if (spamStatus == CarrierCallIdentity.SPAM_SUSPECTED)
+                                Text(stringResource(R.string.expressive_suspected_spam), Modifier.padding(top = 8.dp), color = Color(0xFFB26A00))
+                            else if (primaryInfoState.callerVerificationStatus() == CarrierCallIdentity.VERIFICATION_VERIFIED)
+                                Text(stringResource(R.string.expressive_verified_caller), Modifier.padding(top = 8.dp), color = Color(0xFF16834B))
+                            else if (primaryInfoState.callerVerificationStatus() == CarrierCallIdentity.VERIFICATION_UNVERIFIED)
+                                Text(stringResource(R.string.expressive_unverified_caller), Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            else if (spamStatus == CarrierCallIdentity.SPAM_NOT_SPAM)
+                                Text(stringResource(R.string.expressive_not_spam), Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             primaryInfoState.location()?.takeIf { it.isNotBlank() }?.let {
                                 Text(it, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
                             }

@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.multimedia.MultimediaData;
+import com.android.dialer.spam.CarrierCallIdentity;
 
 import com.google.auto.value.AutoValue;
 
@@ -67,6 +68,10 @@ public abstract class PrimaryInfo {
 
   public abstract boolean isSpam();
 
+  public abstract int carrierSpamStatus();
+
+  public abstract int callerVerificationStatus();
+
   public abstract boolean isLocalContact();
 
   public abstract boolean answeringDisconnectsOngoingCall();
@@ -83,7 +88,10 @@ public abstract class PrimaryInfo {
   public abstract int numberPresentation();
 
   public static Builder builder() {
-    return new AutoValue_PrimaryInfo.Builder().setFallbackPhotoResId(0);
+    return new AutoValue_PrimaryInfo.Builder()
+        .setFallbackPhotoResId(0)
+        .setCarrierSpamStatus(CarrierCallIdentity.SPAM_UNKNOWN)
+        .setCallerVerificationStatus(CarrierCallIdentity.VERIFICATION_UNKNOWN);
   }
 
   /** Builder class for primary call info. */
@@ -114,6 +122,10 @@ public abstract class PrimaryInfo {
     public abstract Builder setIsWorkCall(boolean isWorkCall);
 
     public abstract Builder setIsSpam(boolean isSpam);
+
+    public abstract Builder setCarrierSpamStatus(int carrierSpamStatus);
+
+    public abstract Builder setCallerVerificationStatus(int callerVerificationStatus);
 
     public abstract Builder setIsLocalContact(boolean isLocalContact);
 
