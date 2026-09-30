@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.android.dialer.R
 
 // Keep the call actions recognizable across dynamic and monochrome themes.
-private val AnswerGreen = Color(0xFF28A745)
 private val DeclineRed = Color(0xFFE53935)
 
 @Composable

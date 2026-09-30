@@ -3,7 +3,7 @@
 <resources>
     <string name="expressive_settings_display_summary">Theme, contact name order, caller photos and call buttons</string>
     <string name="expressive_monochrome_theme">Black &amp; white theme</string>
-    <string name="expressive_monochrome_theme_summary">Use monochrome colors throughout the app. Follows your device’s light or dark theme.</string>
+    <string name="expressive_monochrome_theme_summary">Use neutral backgrounds and main accents while keeping other colors. Follows your device’s light or dark theme.</string>
     <string name="expressive_separate_call_buttons">Separate call buttons</string>
     <string name="expressive_separate_call_buttons_summary">Use green Answer and red Decline buttons instead of swiping.</string>
     <string name="expressive_settings_sound_summary">Ringtone, vibration, dialpad tones and call audio</string>

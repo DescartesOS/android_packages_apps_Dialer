@@ -198,8 +198,7 @@ fun ContactAvatar(name: String, modifier: Modifier = Modifier, large: Boolean = 
         color = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
         Box(contentAlignment = Alignment.Center) {
-            if (photo != null) Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
-                colorFilter = monochromeImageFilter())
+            if (photo != null) Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Text(name.trim().firstOrNull()?.uppercase() ?: "?",
                 style = if (large) MaterialTheme.typography.displaySmall else MaterialTheme.typography.titleLarge)
         }

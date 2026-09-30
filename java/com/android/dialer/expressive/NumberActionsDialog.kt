@@ -68,8 +68,7 @@ internal fun NumberActionsDialog(
                 Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (photo != null) Image(photo, null, Modifier.size(96.dp).clip(CircleShape), contentScale = ContentScale.Crop,
-                        colorFilter = monochromeImageFilter())
+                    if (photo != null) Image(photo, null, Modifier.size(96.dp).clip(CircleShape), contentScale = ContentScale.Crop)
                     else Surface(Modifier.size(96.dp), shape = CircleShape,
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {

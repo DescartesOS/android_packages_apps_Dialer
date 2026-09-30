@@ -32,6 +32,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -237,7 +238,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                     .padding(horizontal = 24.dp, vertical = 16.dp)) {
                     ExpressiveTile(onClick = { screenDelegate.onEndCallClicked() }, enabled = endEnabled,
                         modifier = Modifier.widthIn(max = 260.dp).fillMaxWidth().heightIn(min = 64.dp),
-                        color = endCallContainerColor(), contentColor = endCallContentColor()) {
+                        color = EndCallRed, contentColor = Color.White) {
                         Symbol(DialerSymbol.EndCall)
                         Text(stringResource(R.string.expressive_end_call), Modifier.padding(start = 12.dp))
                     }

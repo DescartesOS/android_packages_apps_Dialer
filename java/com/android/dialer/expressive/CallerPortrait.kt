@@ -51,8 +51,7 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, 
     Box(modifier.background(base)) {
         if (painter != null) {
             Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
-                colorFilter = monochromeImageFilter())
+                contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
         } else {
             Canvas(Modifier.fillMaxSize()) {
                 val unit = size.minDimension
@@ -78,8 +77,7 @@ internal fun RoundedCallerAvatar(photo: ImageBitmap?, modifier: Modifier = Modif
     Surface(modifier, shape = MaterialShapes.Cookie9Sided.toShape(), color = colors.secondaryContainer,
         contentColor = colors.onSecondaryContainer) {
         if (painter != null) {
-            Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
-                colorFilter = monochromeImageFilter())
+            Image(painter, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
             Box(contentAlignment = Alignment.Center) {
                 Symbol(DialerSymbol.Person, modifier = Modifier.fillMaxSize(.8f)

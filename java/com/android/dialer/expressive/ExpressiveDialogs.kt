@@ -85,8 +85,7 @@ object ExpressiveDialogs {
             else entries.forEach { account ->
                 ExpressiveTile(onClick = { onSelect.accept(account.index); dialog.dismiss() },
                     modifier = Modifier.fillMaxWidth(), enabled = account.enabled, highlightOnPress = true) {
-                    if (account.icon != null) Image(account.icon, null, Modifier.size(32.dp),
-                        colorFilter = monochromeImageFilter())
+                    if (account.icon != null) Image(account.icon, null, Modifier.size(32.dp))
                     else Symbol(DialerSymbol.Phone)
                     Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(account.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
