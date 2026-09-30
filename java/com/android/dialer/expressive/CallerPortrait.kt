@@ -66,7 +66,7 @@ internal fun CallerPortrait(photo: ImageBitmap?, modifier: Modifier = Modifier, 
             }
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
-            0f to base.copy(alpha = .9f), .22f to base.copy(alpha = .7f),
+            0f to base.copy(alpha = .75f), .22f to base.copy(alpha = .5f),
             .38f to base.copy(alpha = .18f), .6f to base.copy(alpha = .86f), .78f to base, 1f to base)))
         CarrierSpamWarningOverlay(carrierSpamStatus, Modifier.fillMaxSize())
     }
