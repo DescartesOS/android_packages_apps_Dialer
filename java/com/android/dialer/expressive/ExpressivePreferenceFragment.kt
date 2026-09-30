@@ -28,6 +28,8 @@ import android.widget.FrameLayout
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +39,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalView
@@ -228,14 +232,29 @@ private fun PreferenceDialog(pref: Preference, dismiss: () -> Unit, changed: () 
         title = { Text((pref as? DialogPreference)?.dialogTitle?.toString() ?: pref.title?.toString().orEmpty()) },
         text = {
             when (pref) {
-                is ListPreference -> LazyColumn {
+                is ListPreference -> LazyColumn(
+                    modifier = Modifier.fillMaxWidth().selectableGroup(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     items(pref.entries.size) { index ->
-                        Row(Modifier.fillMaxWidth().clickable {
-                            val value = pref.entryValues[index].toString()
-                            if (pref.callChangeListener(value)) { pref.value = value; changed() }; dismiss()
-                        }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(pref.findIndexOfValue(pref.value) == index, null)
-                            Text(pref.entries[index].toString(), Modifier.padding(start = 12.dp))
+                        val selected = pref.findIndexOfValue(pref.value) == index
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (selected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .5f)
+                                else Color.Transparent
+                        ) {
+                            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                .selectable(selected = selected, role = Role.RadioButton, onClick = {
+                                    val value = pref.entryValues[index].toString()
+                                    if (pref.callChangeListener(value)) { pref.value = value; changed() }; dismiss()
+                                }).padding(horizontal = 12.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected, onClick = null)
+                                Text(pref.entries[index].toString(), Modifier.weight(1f).padding(start = 16.dp),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                                    color = MaterialTheme.colorScheme.onSurface)
+                            }
                         }
                     }
                 }
