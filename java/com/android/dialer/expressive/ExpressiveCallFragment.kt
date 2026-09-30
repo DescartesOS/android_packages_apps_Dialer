@@ -287,10 +287,26 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     }
     @Composable
     private fun CallerNameAndNumber(name: String, number: String, compact: Boolean) {
+        val context = LocalContext.current
+        val preferences = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
+        var hideSavedNumber by remember(preferences) {
+            mutableStateOf(preferences.getBoolean("hide_saved_contact_number", false))
+        }
+        DisposableEffect(preferences) {
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == null || key == "hide_saved_contact_number") {
+                    hideSavedNumber = preferences.getBoolean("hide_saved_contact_number", false)
+                }
+            }
+            preferences.registerOnSharedPreferenceChangeListener(listener)
+            hideSavedNumber = preferences.getBoolean("hide_saved_contact_number", false)
+            onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
         Text(name, Modifier.fillMaxWidth(),
             style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
-        if (number.isNotBlank() && name != number) Text(number, Modifier.fillMaxWidth().padding(top = 8.dp),
+        if (number.isNotBlank() && name != number && !(hideSavedNumber && primaryInfoState.isLocalContact()))
+            Text(number, Modifier.fillMaxWidth().padding(top = 8.dp),
             style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

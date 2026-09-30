@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2024-2026 Lunaris AOSP. SPDX-License-Identifier: Apache-2.0 -->
 <resources>
+    <string name="expressive_hide_saved_contact_number">Hide saved contact numbers</string>
+    <string name="expressive_hide_saved_contact_number_summary">Show only the contact name on the caller screen for saved contacts</string>
     <string name="expressive_settings_display_summary">Theme, contact name order, caller photos and call buttons</string>
     <string name="expressive_monochrome_theme">Black &amp; white theme</string>
     <string name="expressive_monochrome_theme_summary">Use neutral backgrounds and main accents while keeping other colors. Follows your device’s light or dark theme.</string>

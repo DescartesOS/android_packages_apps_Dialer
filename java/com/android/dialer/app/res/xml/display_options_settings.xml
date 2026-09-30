@@ -61,6 +61,13 @@
       app:iconSpaceReserved="false"/>
 
   <SwitchPreferenceCompat
+      android:key="hide_saved_contact_number"
+      android:title="@string/expressive_hide_saved_contact_number"
+      android:summary="@string/expressive_hide_saved_contact_number_summary"
+      android:defaultValue="false"
+      app:iconSpaceReserved="false"/>
+
+  <SwitchPreferenceCompat
       android:key="caller_screen_spam_warning"
       android:title="@string/expressive_caller_screen_spam_warning"
       android:summary="@string/expressive_caller_screen_spam_warning_summary"
