@@ -94,8 +94,7 @@ fun DialerHome(
         }, floatingActionButton = {
             ExpressiveTile(onClick = { onKeypad(true) }, color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary) {
-                Symbol(DialerSymbol.Keypad)
-                Text(stringResource(R.string.expressive_keypad), Modifier.padding(start = 10.dp), fontWeight = FontWeight.Bold)
+                Symbol(DialerSymbol.Keypad, stringResource(R.string.expressive_keypad))
             }
         }) { padding ->
         val direction = LocalLayoutDirection.current
