@@ -351,8 +351,17 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         })
         val selected = when (id) { BUTTON_AUDIO -> audio?.route == CallAudioState.ROUTE_SPEAKER
             BUTTON_MUTE -> audio?.isMuted == true; BUTTON_HOLD -> held; BUTTON_RECORD_CALL -> recording; else -> false }
+        val monochromeActive = selected && LocalMonochromeTheme.current
+        val dark = isSystemInDarkTheme()
+        val colors = MaterialTheme.colorScheme
         ExpressiveTile(onClick = { clickControl(id) }, modifier = modifier.semantics { this.selected = selected },
-            selected = selected, enabled = controlsEnabled && enabledButtons[id] != false) {
+            selected = selected, enabled = controlsEnabled && enabledButtons[id] != false,
+            color = if (monochromeActive) {
+                if (dark) Color.White else Color.Black
+            } else if (selected) colors.primaryContainer else colors.surfaceContainerHigh,
+            contentColor = if (monochromeActive) {
+                if (dark) Color.Black else Color.White
+            } else if (selected) colors.onPrimaryContainer else colors.onSurface) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Symbol(symbol); Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
             }

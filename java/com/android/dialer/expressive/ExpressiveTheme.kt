@@ -39,6 +39,7 @@ internal val AnswerGreen = Color(0xFF28A745)
 internal val EndCallRed = Color(0xFFBA1A1A)
 
 private const val MONOCHROME_THEME = "monochrome_theme"
+internal val LocalMonochromeTheme = staticCompositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -85,6 +86,6 @@ fun DialerExpressiveTheme(content: @Composable () -> Unit) {
             headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 40.sp),
             titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp)
         ),
-        content = content
+        content = { CompositionLocalProvider(LocalMonochromeTheme provides monochrome, content = content) }
     )
 }
