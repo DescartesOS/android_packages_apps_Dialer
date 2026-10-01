@@ -34,6 +34,7 @@ private val GoogleSwipeGreen = Color(0xFF16A05D)
 private val LocalGoogleSwipe = staticCompositionLocalOf<SpringSwipeState> {
     error("IncomingCallGoogleHandle must be inside IncomingCallGoogleSwipe")
 }
+private val LocalGoogleSwipeInput = staticCompositionLocalOf<Modifier> { Modifier }
 
 @Composable
 internal fun IncomingCallGoogleSwipe(
@@ -48,14 +49,16 @@ internal fun IncomingCallGoogleSwipe(
     val answerLabel = stringResource(R.string.expressive_answer)
     val rejectLabel = stringResource(R.string.expressive_decline)
     val gestureLabel = stringResource(R.string.expressive_google_swipe_accessibility)
+    val currentAnswer by rememberUpdatedState(onAnswer)
+    val currentReject by rememberUpdatedState(onReject)
 
     LaunchedEffect(enabled) { if (!enabled) swipe.settle() }
-    Box(Modifier.fillMaxSize().semantics {
+    val pillInput = Modifier.semantics {
         contentDescription = gestureLabel
         role = Role.Button
         if (enabled) {
-            onClick(answerLabel) { onAnswer(); true }
-            customActions = listOf(CustomAccessibilityAction(rejectLabel) { onReject(); true })
+            onClick(answerLabel) { currentAnswer(); true }
+            customActions = listOf(CustomAccessibilityAction(rejectLabel) { currentReject(); true })
         } else disabled()
     }.focusable(enabled).springSwipe(
         swipe, Orientation.Horizontal, threshold, enabled = enabled
@@ -63,11 +66,15 @@ internal fun IncomingCallGoogleSwipe(
         if (action != 0) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         swipe.settle(velocity = velocity)
         when (action) {
-            -1 -> onReject()
-            1 -> onAnswer()
+            -1 -> currentReject()
+            1 -> currentAnswer()
         }
-    }) {
-        CompositionLocalProvider(LocalGoogleSwipe provides swipe, content = content)
+    }
+    Box(Modifier.fillMaxSize()) {
+        CompositionLocalProvider(
+            LocalGoogleSwipe provides swipe,
+            LocalGoogleSwipeInput provides pillInput,
+            content = content)
     }
 }
 
@@ -97,7 +104,8 @@ internal fun IncomingCallGoogleHandle(enabled: Boolean) {
     val rightLabel = stringResource(R.string.expressive_answer)
 
     Box(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp)
-        .height(82.dp).graphicsLayer { alpha = if (enabled) 1f else .5f },
+        .height(82.dp).then(LocalGoogleSwipeInput.current)
+        .graphicsLayer { alpha = if (enabled) 1f else .5f },
         contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             drawRoundRect(trackBrush, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f))
