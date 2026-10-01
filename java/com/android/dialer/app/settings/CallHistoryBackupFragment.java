@@ -81,6 +81,7 @@ public class CallHistoryBackupFragment
     setPreferenceScreen(getPreferenceManager().createPreferenceScreen(requireContext()));
 
     androidx.preference.Preference export = new androidx.preference.Preference(requireContext());
+    export.setKey("export_call_history");
     export.setTitle(R.string.export_call_history_title);
     export.setSummary(R.string.export_call_history_summary);
     export.setOnPreferenceClickListener(preference -> {
@@ -95,6 +96,7 @@ public class CallHistoryBackupFragment
 
     androidx.preference.Preference importPreference =
         new androidx.preference.Preference(requireContext());
+    importPreference.setKey("import_call_history");
     importPreference.setTitle(R.string.import_call_history_title);
     importPreference.setSummary(R.string.import_call_history_summary);
     importPreference.setOnPreferenceClickListener(preference -> {

@@ -80,6 +80,7 @@ enum class DialerSymbol(@DrawableRes val drawableRes: Int) {
     Pause(R.drawable.ic_ms_pause_24),
     Stop(R.drawable.ic_ms_stop_24),
     Play(R.drawable.ic_ms_play_arrow_24),
+    Save(R.drawable.ic_ms_save_24),
     Swap(R.drawable.ic_ms_swap_calls_24),
     Video(R.drawable.ic_ms_videocam_24),
     Record(R.drawable.ic_ms_fiber_manual_record_24),

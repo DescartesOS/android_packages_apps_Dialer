@@ -200,6 +200,7 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
     return when {
         route == "DisplayOptionsSettingsFragment" || key.contains("photo") -> DialerSymbol.Photo
         route == "SoundSettingsFragment" -> DialerSymbol.Speaker
+        route == "CallHistoryBackupFragment" -> DialerSymbol.History
         route == "LookupSettingsFragment" || key.contains("lookup") -> DialerSymbol.Search
         route == "VoicemailSettingsFragment" || route == "PhoneAccountSelectionFragment" -> DialerSymbol.Voicemail
         action.contains("ACCESSIBILITY") -> DialerSymbol.Accessibility
@@ -209,6 +210,10 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
         action.contains("CALL_SETTINGS") -> DialerSymbol.Phone
         key.contains("record") -> DialerSymbol.Record
         key.contains("vibrat") -> DialerSymbol.Vibrate
+        key.contains("monochrome") -> DialerSymbol.Photo
+        key.contains("hide_call_status_bar") -> DialerSymbol.Accessibility
+        key.contains("hide_saved_contact") -> DialerSymbol.Lock
+        key.contains("caller_screen_spam_warning") -> DialerSymbol.Block
         key.contains("ringtone") || key.contains("notification") -> DialerSymbol.Bell
         key.contains("dtmf") -> DialerSymbol.Keypad
         key.contains("pin") -> DialerSymbol.Lock
@@ -217,6 +222,10 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
         key.contains("sort") -> DialerSymbol.Swap
         key.contains("display") -> DialerSymbol.People
         key.contains("mute") -> DialerSymbol.Mic
+        key.contains("announcement") -> DialerSymbol.Speaker
+        key.contains("auto_answer_external_audio") -> DialerSymbol.Headset
+        key.contains("export_call_history") -> DialerSymbol.Share
+        key.contains("import_call_history") -> DialerSymbol.Save
         key == "incoming_call_style" -> DialerSymbol.Phone
         key.contains("proximity") -> DialerSymbol.Phone
         !pref.isSelectable -> DialerSymbol.Info
