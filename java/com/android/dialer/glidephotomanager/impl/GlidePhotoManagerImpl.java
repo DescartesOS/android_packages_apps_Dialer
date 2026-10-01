@@ -102,7 +102,11 @@ public class GlidePhotoManagerImpl implements GlidePhotoManager {
       circleCrop = false; // The spam icon is an octagon so we don't crop it.
 
     } else if (!TextUtils.isEmpty(photoInfo.getPhotoUri())) {
-      request = requestManager.load(parseUri(photoInfo.getPhotoUri()));
+      Uri photoUri = parseUri(photoInfo.getPhotoUri());
+      if (isFullscreenPhoto) {
+        photoUri = getDisplayPhotoUri(photoUri);
+      }
+      request = requestManager.load(photoUri);
 
     } else if (photoInfo.getPhotoId() != 0) {
       request =
@@ -160,6 +164,15 @@ public class GlidePhotoManagerImpl implements GlidePhotoManager {
   @Nullable
   private static Uri parseUri(@Nullable String uri) {
     return TextUtils.isEmpty(uri) ? null : Uri.parse(uri);
+  }
+
+  @Nullable
+  private static Uri getDisplayPhotoUri(@Nullable Uri photoUri) {
+    if (photoUri == null || photoUri.getPath() == null || !photoUri.getPath().endsWith("/photo")) {
+      return photoUri;
+    }
+    return photoUri.buildUpon().path(photoUri.getPath().substring(0, photoUri.getPath().length() - 6)
+        + "/display_photo").build();
   }
 
   /**
