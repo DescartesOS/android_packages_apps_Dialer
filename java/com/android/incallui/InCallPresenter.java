@@ -118,6 +118,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
   private InCallVibrationHandler vibrationHandler;
   private InCallDndHandler dndHandler;
   private ContactInfoCache contactInfoCache;
+  private CallerNameAnnouncement callerNameAnnouncement;
   private Context context;
   private CallList callList;
   private ExternalCallList externalCallList;
@@ -307,6 +308,8 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     this.context = context;
 
     this.contactInfoCache = contactInfoCache;
+    callerNameAnnouncement = new CallerNameAnnouncement(context, contactInfoCache);
+    addListener(callerNameAnnouncement);
 
     this.statusBarNotifier = statusBarNotifier;
     this.externalCallNotifier = externalCallNotifier;
@@ -371,6 +374,11 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
   public void tearDown() {
     LogUtil.d("InCallPresenter.tearDown", "tearDown");
     callList.clearOnDisconnect();
+    if (callerNameAnnouncement != null) {
+      removeListener(callerNameAnnouncement);
+      callerNameAnnouncement.destroy();
+      callerNameAnnouncement = null;
+    }
 
     serviceConnected = false;
 
@@ -740,6 +748,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     LogUtil.i(
         "InCallPresenter.onIncomingCall", "Phone switching state: " + oldState + " -> " + newState);
     inCallState = newState;
+    if (callerNameAnnouncement != null) callerNameAnnouncement.start(call);
 
     if (newState.isIncoming() && mAccelerometerListener != null) {
         mAccelerometerListener.enable(true);

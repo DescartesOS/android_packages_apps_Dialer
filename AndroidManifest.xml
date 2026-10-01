@@ -112,6 +112,13 @@
     <!-- Required to close the notification shade -->
     <uses-permission android:name="android.permission.BROADCAST_CLOSE_SYSTEM_DIALOGS" />
 
+    <!-- Used to discover installed text-to-speech services for caller announcements. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:name="com.android.dialer.binary.aosp.AospDialerApplication"
         android:appCategory="social"

@@ -37,6 +37,12 @@
         android:title="@string/vibrate_on_ring_title" />
 
     <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="caller_name_announcement"
+        android:summary="@string/caller_name_announcement_summary"
+        android:title="@string/caller_name_announcement_title" />
+
+    <SwitchPreferenceCompat
         android:defaultValue="true"
         android:key="@string/play_dtmf_preference_key"
         android:summary="@string/expressive_settings_dtmf_summary"

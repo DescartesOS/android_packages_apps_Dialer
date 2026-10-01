@@ -447,6 +447,15 @@
        [CHAR LIMIT=30] -->
   <string name="vibrate_on_ring_title">"Also vibrate for calls</string>
 
+  <!-- Setting option name and description for speaking the incoming caller's name. -->
+  <string name="caller_name_announcement_title">Caller name announcement</string>
+  <string name="caller_name_announcement_summary">Speak incoming caller names aloud. Silent, vibrate, and Do Not Disturb modes are respected.</string>
+
+  <!-- Spoken prompts for incoming calls. -->
+  <string name="caller_announcement_incoming">Incoming call from %1$s</string>
+  <string name="caller_announcement_unknown">Incoming call from an unknown caller</string>
+  <string name="caller_announcement_private">Incoming call from a private caller</string>
+
   <!-- Setting option name to enable or disable DTMF tone sound [CHAR LIMIT=30] -->
   <string name="dtmf_tone_enable_title">Keypad tones</string>
   <!-- Label for setting to adjust the length of DTMF tone sounds. [CHAR LIMIT=40] -->
