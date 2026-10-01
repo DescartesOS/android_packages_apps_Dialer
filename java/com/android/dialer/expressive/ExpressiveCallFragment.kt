@@ -184,7 +184,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(bottom = if (answering) 0.dp else 88.dp)) {
                     val availableHeight = maxHeight
                     val compactIdentity = dialpad || availableHeight < 520.dp
-                    val avatarSize = minOf(if (compactIdentity) 64.dp else 126.dp, maxWidth / 3) * 1.2f
+                    val avatarSize = minOf(if (compactIdentity) 64.dp else 150.dp, maxWidth / 3) * 1.2f
                     CallerContentLayout(
                         viewportHeight = (availableHeight - 32.dp).coerceAtLeast(0.dp),
                         centerOffset = (if (answering) 0.dp else 44.dp) - 48.dp,
