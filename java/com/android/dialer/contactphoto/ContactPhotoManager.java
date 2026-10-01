@@ -189,6 +189,12 @@ public abstract class ContactPhotoManager implements ComponentCallbacks2 {
     ContactPhotoManager.DefaultImageRequest request =
         new ContactPhotoManager.DefaultImageRequest(
             displayName, lookupKey, contactType, true /* isCircular */);
+
+    if (contactType == LetterTileDrawable.TYPE_SPAM) {
+      loadThumbnail(badge, 0, false /* darkTheme */, true /* isCircular */, request);
+      return;
+    }
+
     if (photoId == 0 && photoUri != null) {
       loadDirectoryPhoto(badge, photoUri, false /* darkTheme */, true /* isCircular */, request);
     } else {

@@ -34,11 +34,18 @@ public final class CarrierCallIdentityStore {
     if (handle == null || identity == null) {
       return;
     }
-    context
-        .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        .edit()
-        .putInt(key(handle, account) + SPAM_SUFFIX, identity.getSpamStatus())
-        .putInt(key(handle, account) + VERIFICATION_SUFFIX, identity.getVerificationStatus())
+    SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    String key = key(handle, account);
+    // Screening callbacks can omit one of the values. Do not let an unknown update erase a
+    // value learned from an earlier callback.
+    CarrierCallIdentity merged =
+        new CarrierCallIdentity(
+                prefs.getInt(key + SPAM_SUFFIX, CarrierCallIdentity.SPAM_UNKNOWN),
+                prefs.getInt(key + VERIFICATION_SUFFIX, CarrierCallIdentity.VERIFICATION_UNKNOWN))
+            .merge(identity);
+    prefs.edit()
+        .putInt(key + SPAM_SUFFIX, merged.getSpamStatus())
+        .putInt(key + VERIFICATION_SUFFIX, merged.getVerificationStatus())
         .apply();
   }
 

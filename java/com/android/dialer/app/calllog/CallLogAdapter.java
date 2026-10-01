@@ -75,6 +75,7 @@ import com.android.dialer.phonenumbercache.CallLogQuery;
 import com.android.dialer.phonenumbercache.ContactInfo;
 import com.android.dialer.phonenumbercache.ContactInfoHelper;
 import com.android.dialer.phonenumberutil.PhoneNumberHelper;
+import com.android.dialer.spam.CarrierCallIdentityStore;
 import com.android.dialer.telecom.TelecomUtil;
 import com.android.dialer.util.PermissionsUtil;
 
@@ -883,6 +884,10 @@ public class CallLogAdapter extends GroupingListAdapter
 
     final PhoneAccountHandle accountHandle =
         TelecomUtil.composePhoneAccountHandle(details.accountComponentName, details.accountId);
+
+    details.isSpam =
+        CarrierCallIdentityStore.get(activity, details.number.toString(), accountHandle).isSpam();
+    views.isSpam = details.isSpam;
 
     final boolean isVoicemailNumber = callLogCache.isVoicemailNumber(accountHandle, details.number);
 
