@@ -178,6 +178,13 @@ public class DialerSettingsActivity extends BaseActivity implements
       otherSettings.setFragment(OtherSettingsFragment.class.getName());
       otherSettings.setIconSpaceReserved(false);
       getPreferenceScreen().addPreference(otherSettings);
+
+      final Preference callHistoryBackup = new Preference(getContext());
+      callHistoryBackup.setTitle(R.string.call_history_backup_title);
+      callHistoryBackup.setSummary(R.string.call_history_backup_summary);
+      callHistoryBackup.setFragment(CallHistoryBackupFragment.class.getName());
+      callHistoryBackup.setIconSpaceReserved(false);
+      getPreferenceScreen().addPreference(callHistoryBackup);
     }
 
     @Override

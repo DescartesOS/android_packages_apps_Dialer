@@ -456,6 +456,18 @@
   <string name="caller_announcement_unknown">Incoming call from an unknown caller</string>
   <string name="caller_announcement_private">Incoming call from a private caller</string>
 
+  <string name="call_history_backup_title">Call history backup</string>
+  <string name="call_history_backup_summary">Import or export call history without changing contacts</string>
+  <string name="export_call_history_title">Export call history</string>
+  <string name="export_call_history_summary">Save your recent calls to a JSON backup file</string>
+  <string name="import_call_history_title">Import call history</string>
+  <string name="import_call_history_summary">Restore calls from a JSON backup without creating contacts</string>
+  <string name="call_history_permission_required">Call log permission is required</string>
+  <string name="call_history_export_complete">Call history exported</string>
+  <string name="call_history_export_failed">Could not export call history</string>
+  <string name="call_history_import_complete">Imported %1$d call(s)</string>
+  <string name="call_history_import_failed">Could not import call history</string>
+
   <!-- Setting option name to enable or disable DTMF tone sound [CHAR LIMIT=30] -->
   <string name="dtmf_tone_enable_title">Keypad tones</string>
   <!-- Label for setting to adjust the length of DTMF tone sounds. [CHAR LIMIT=40] -->
