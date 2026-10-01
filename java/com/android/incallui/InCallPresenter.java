@@ -91,6 +91,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
         AccelerometerListener.ChangeListener {
 
   private static final Bundle EMPTY_EXTRAS = new Bundle();
+  private static final String AUTO_ANSWER_EXTERNAL_AUDIO = "auto_answer_external_audio";
 
   private static InCallPresenter inCallPresenter;
 
@@ -748,7 +749,8 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     LogUtil.i(
         "InCallPresenter.onIncomingCall", "Phone switching state: " + oldState + " -> " + newState);
     inCallState = newState;
-    if (callerNameAnnouncement != null) callerNameAnnouncement.start(call);
+    boolean autoAnswered = maybeAutoAnswerOnExternalAudio(call, newState);
+    if (!autoAnswered && callerNameAnnouncement != null) callerNameAnnouncement.start(call);
 
     if (newState.isIncoming() && mAccelerometerListener != null) {
         mAccelerometerListener.enable(true);
@@ -767,6 +769,36 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     }
     Trace.endSection();
     Trace.endSection();
+  }
+
+  private boolean maybeAutoAnswerOnExternalAudio(DialerCall call, InCallState state) {
+    if (call == null
+        || !state.isIncoming()
+        || call.getState() != DialerCallState.INCOMING
+        || call.hasProperty(CallCompat.Details.PROPERTY_IS_EXTERNAL_CALL)
+        || !PreferenceManager.getDefaultSharedPreferences(context)
+            .getBoolean(AUTO_ANSWER_EXTERNAL_AUDIO, false)) {
+      return false;
+    }
+
+    CallAudioState audioState = AudioModeProvider.getInstance().getAudioState();
+    int audioRoute = audioState == null ? CallAudioState.ROUTE_EARPIECE : audioState.getRoute();
+    boolean hasExternalAudio =
+        audioRoute == CallAudioState.ROUTE_BLUETOOTH
+            || audioRoute == CallAudioState.ROUTE_WIRED_HEADSET
+            || AudioModeProvider.hasExternalAudioDevice(context);
+    if (!hasExternalAudio) {
+      return false;
+    }
+
+    LogUtil.i(
+        "InCallPresenter.maybeAutoAnswerOnExternalAudio",
+        "Auto-answering incoming call on audio route " + audioRoute);
+    call.answer(VideoProfile.STATE_AUDIO_ONLY);
+    if (mAccelerometerListener != null) {
+      mAccelerometerListener.enable(false);
+    }
+    return true;
   }
 
   @Override

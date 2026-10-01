@@ -27,6 +27,10 @@
     <string name="disable_proximity_sensor_title">Disable proximity sensor</string>
     <string name="disable_proximity_sensor_summary">Do not turn off touchscreen and display in call based on proximity sensor</string>
 
+    <!-- Auto answer -->
+    <string name="auto_answer_external_audio_title">Auto-answer on external audio</string>
+    <string name="auto_answer_external_audio_summary">Automatically answer incoming calls when Bluetooth, wired, or USB audio is connected</string>
+
     <!-- Smart Options -->
     <string name="smart_category_title">Other options</string>
     <string name="smart_mute_title">Smart mute</string>

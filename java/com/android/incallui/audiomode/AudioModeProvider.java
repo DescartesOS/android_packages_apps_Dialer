@@ -68,6 +68,26 @@ public class AudioModeProvider {
     return audioState;
   }
 
+  public static boolean hasExternalAudioDevice(Context context) {
+    AudioManager audioManager = context.getSystemService(AudioManager.class);
+    if (audioManager == null) {
+      return false;
+    }
+    for (AudioDeviceInfo info : audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+      switch (info.getType()) {
+        case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+        case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+        case AudioDeviceInfo.TYPE_BLE_HEADSET:
+        case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+        case AudioDeviceInfo.TYPE_USB_HEADSET:
+          return true;
+        default:
+          break;
+      }
+    }
+    return false;
+  }
+
   /**
    * Sets a approximated audio state before {@link #onAudioStateChanged} is called. Classes such as
    * {@link com.android.incallui.ProximitySensor} fetches the audio state before it is updated by

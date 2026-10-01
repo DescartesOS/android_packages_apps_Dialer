@@ -27,4 +27,10 @@
         android:summary="@string/disable_proximity_sensor_summary"
         android:defaultValue="false" />
 
+    <SwitchPreferenceCompat
+        android:key="auto_answer_external_audio"
+        android:title="@string/auto_answer_external_audio_title"
+        android:summary="@string/auto_answer_external_audio_summary"
+        android:defaultValue="false" />
+
 </PreferenceScreen>
