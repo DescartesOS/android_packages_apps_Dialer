@@ -35,6 +35,10 @@ import androidx.compose.ui.*
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +54,7 @@ import kotlinx.coroutines.awaitCancellation
 @Composable
 fun DialerHome(
     data: DialerData, loading: Boolean, error: Boolean, tab: Int, query: String, digits: String,
-    keypad: Boolean, compactFloatingBar: Boolean = false,
+    keypad: Boolean, compactFloatingBar: Boolean = false, hideKeyboardOnScroll: Boolean = true,
     onTab: (Int) -> Unit, onQuery: (String) -> Unit, onDigits: (String) -> String,
     onKeypad: (Boolean) -> Unit, onCall: (String) -> Unit, onVideo: (String) -> Unit, onVoicemail: () -> Unit,
     onPermissions: () -> Unit, onRetry: () -> Unit, onStar: (Person) -> Unit,
@@ -98,7 +102,18 @@ fun DialerHome(
         val direction = LocalLayoutDirection.current
         val contentInsets = PaddingValues(start = padding.calculateStartPadding(direction),
             top = padding.calculateTopPadding(), end = padding.calculateEndPadding(direction))
-        val bottomClearance = padding.calculateBottomPadding()
+    val bottomClearance = padding.calculateBottomPadding()
+        val keyboard = LocalSoftwareKeyboardController.current
+        val keyboardScrollConnection = remember(hideKeyboardOnScroll, keyboard) {
+            if (!hideKeyboardOnScroll) null else object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source == NestedScrollSource.UserInput && available.y != 0f) {
+                        keyboard?.hide()
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
         Column(Modifier.padding(contentInsets).consumeWindowInsets(padding).fillMaxSize().widthIn(max = 840.dp)) {
             Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -138,7 +153,9 @@ fun DialerHome(
                     page == 0 && !data.callsAllowed || page in 1..2 && !data.contactsAllowed ->
                         EmptyDialerState(DialerSymbol.People, stringResource(R.string.expressive_permission_title),
                             stringResource(R.string.expressive_permission_body), stringResource(R.string.expressive_continue), onPermissions)
-                    else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(
+                    else -> LazyColumn(Modifier.fillMaxSize().then(
+                        keyboardScrollConnection?.let { Modifier.nestedScroll(it) } ?: Modifier
+                    ), contentPadding = PaddingValues(
                         start = 20.dp, end = 20.dp, top = 16.dp, bottom = 104.dp + bottomClearance),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         if (page == 0) {

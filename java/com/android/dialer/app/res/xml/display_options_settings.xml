@@ -68,6 +68,13 @@
       app:iconSpaceReserved="false"/>
 
   <SwitchPreferenceCompat
+      android:key="hide_keyboard_on_scroll"
+      android:title="@string/hide_keyboard_on_scroll_title"
+      android:summary="@string/hide_keyboard_on_scroll_summary"
+      android:defaultValue="true"
+      app:iconSpaceReserved="false"/>
+
+  <SwitchPreferenceCompat
       android:key="hide_saved_contact_number"
       android:title="@string/expressive_hide_saved_contact_number"
       android:summary="@string/expressive_hide_saved_contact_number_summary"
