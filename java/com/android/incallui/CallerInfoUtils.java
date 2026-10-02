@@ -31,12 +31,15 @@ import com.android.dialer.phonenumbercache.CachedNumberLookupService;
 import com.android.dialer.phonenumbercache.CachedNumberLookupService.CachedContactInfo;
 import com.android.dialer.phonenumbercache.ContactInfo;
 import com.android.dialer.phonenumberutil.PhoneNumberHelper;
+import com.android.dialer.spam.CarrierCallIdentity;
+import com.android.dialer.spam.CarrierCallIdentityStore;
 import com.android.dialer.util.PermissionsUtil;
 import com.android.incallui.call.DialerCall;
 
 import org.lineageos.lib.phone.SensitivePhoneNumbers;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 /** Utility methods for contact and caller info related functionality */
 public class CallerInfoUtils {
@@ -94,6 +97,15 @@ public class CallerInfoUtils {
     info.contactExists = false;
     info.countryIso = PhoneNumberHelper.getCurrentCountryIso(context, call.getAccountHandle());
 
+    if (containsSpamMarker(info.cnapName)) {
+      CarrierCallIdentityStore.put(
+          context,
+          call.getHandle(),
+          call.getAccountHandle(),
+          new CarrierCallIdentity(
+              CarrierCallIdentity.SPAM_CONFIRMED, CarrierCallIdentity.VERIFICATION_UNKNOWN));
+    }
+
     String number = call.getNumber();
     if (!TextUtils.isEmpty(number)) {
       // Don't split it if it's a SIP number.
@@ -119,6 +131,11 @@ public class CallerInfoUtils {
     ContactInfoCache.getInstance(context).maybeInsertCnapInformationIntoCache(context, call, info);
 
     return info;
+  }
+
+  private static boolean containsSpamMarker(String cnapName) {
+    return !TextUtils.isEmpty(cnapName)
+        && cnapName.toLowerCase(Locale.ROOT).contains("spam");
   }
 
   /**
