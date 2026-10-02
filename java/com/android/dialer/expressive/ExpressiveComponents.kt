@@ -141,11 +141,18 @@ fun ExpressiveTile(
 }
 
 @Composable
-fun FloatingDialerBar(selected: Int, labels: List<String>, onSelect: (Int) -> Unit) {
+fun FloatingDialerBar(
+    selected: Int,
+    labels: List<String>,
+    onSelect: (Int) -> Unit,
+    compact: Boolean = false
+) {
     val icons = listOf(DialerSymbol.History, DialerSymbol.Star, DialerSymbol.People, DialerSymbol.Voicemail)
     val haptic = LocalHapticFeedback.current
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shadowElevation = 8.dp, tonalElevation = 2.dp, modifier = Modifier.widthIn(max = 440.dp)) {
+        shadowElevation = 8.dp, tonalElevation = 2.dp,
+        modifier = Modifier.widthIn(max = if (compact) 280.dp else 440.dp)
+            .animateContentSize(spring(.85f, 500f))) {
         Row(Modifier.padding(6.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically) {
             labels.forEachIndexed { index, label ->
@@ -166,7 +173,8 @@ fun FloatingDialerBar(selected: Int, labels: List<String>, onSelect: (Int) -> Un
                     CompositionLocalProvider(LocalContentColor provides if (active) MaterialTheme.colorScheme.onPrimaryContainer
                         else MaterialTheme.colorScheme.onSurfaceVariant) {
                         Symbol(icons[index], modifier = Modifier.size(22.dp))
-                        AnimatedVisibility(active, enter = fadeIn() + expandHorizontally(spring(.8f, 500f)),
+                        AnimatedVisibility(!compact && active,
+                            enter = fadeIn() + expandHorizontally(spring(.8f, 500f)),
                             exit = fadeOut() + shrinkHorizontally()) {
                             Text(label, Modifier.padding(start = 6.dp).clearAndSetSemantics {}, maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

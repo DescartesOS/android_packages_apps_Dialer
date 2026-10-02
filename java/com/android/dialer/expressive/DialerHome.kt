@@ -50,7 +50,8 @@ import kotlinx.coroutines.awaitCancellation
 @Composable
 fun DialerHome(
     data: DialerData, loading: Boolean, error: Boolean, tab: Int, query: String, digits: String,
-    keypad: Boolean, onTab: (Int) -> Unit, onQuery: (String) -> Unit, onDigits: (String) -> String,
+    keypad: Boolean, compactFloatingBar: Boolean = false,
+    onTab: (Int) -> Unit, onQuery: (String) -> Unit, onDigits: (String) -> String,
     onKeypad: (Boolean) -> Unit, onCall: (String) -> Unit, onVideo: (String) -> Unit, onVoicemail: () -> Unit,
     onPermissions: () -> Unit, onRetry: () -> Unit, onStar: (Person) -> Unit,
     onDelete: (List<RecentCall>, (Boolean) -> Unit) -> Unit,
@@ -86,7 +87,7 @@ fun DialerHome(
         contentWindowInsets = WindowInsets.safeDrawing,
         bottomBar = {
             Box(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 16.dp, vertical = 12.dp), Alignment.Center) {
-                FloatingDialerBar(tab, labels, onTab)
+                FloatingDialerBar(tab, labels, onTab, compactFloatingBar)
             }
         }, floatingActionButton = {
             ExpressiveTile(onClick = { onKeypad(true) }, color = MaterialTheme.colorScheme.primary,

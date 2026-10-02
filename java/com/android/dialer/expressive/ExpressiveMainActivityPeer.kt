@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.android.dialer.R
 import com.android.dialer.callrecord.CallRecordingPreferences
 import com.android.dialer.callintent.CallInitiationType
@@ -53,6 +54,7 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
     private var query by mutableStateOf("")
     private var digits by mutableStateOf("")
     private var keypad by mutableStateOf(false)
+    private var compactFloatingBar by mutableStateOf(false)
     private var job: Job? = null
     private var observing = false
     private var photoNumber: String? = null
@@ -97,6 +99,7 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
             setContent {
                 DialerExpressiveTheme {
                     DialerHome(data, loading, error, tab, query, digits, keypad,
+                        compactFloatingBar = compactFloatingBar,
                         onTab = { tab = it; query = "" }, onQuery = { query = it },
                         onDigits = { updateDigits(it) }, onKeypad = { keypad = it },
                         onCall = { call(it) }, onVideo = { call(it, true) }, onVoicemail = { voicemail() },
@@ -196,6 +199,8 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
         }
     }
     override fun onActivityResume() {
+        compactFloatingBar = PreferenceManager.getDefaultSharedPreferences(activity)
+            .getBoolean("compact_floating_bar", false)
         refresh()
         if (!observing) {
             activity.contentResolver.registerContentObserver(Calls.CONTENT_URI, true, observer)

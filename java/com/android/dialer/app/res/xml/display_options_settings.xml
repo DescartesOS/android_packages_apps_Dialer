@@ -61,6 +61,13 @@
       app:iconSpaceReserved="false"/>
 
   <SwitchPreferenceCompat
+      android:key="compact_floating_bar"
+      android:title="@string/compact_floating_bar_title"
+      android:summary="@string/compact_floating_bar_summary"
+      android:defaultValue="false"
+      app:iconSpaceReserved="false"/>
+
+  <SwitchPreferenceCompat
       android:key="hide_saved_contact_number"
       android:title="@string/expressive_hide_saved_contact_number"
       android:summary="@string/expressive_hide_saved_contact_number_summary"
