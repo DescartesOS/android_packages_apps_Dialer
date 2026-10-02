@@ -269,9 +269,22 @@ fun DialerHome(
                     }
                 }
             }
-            val match = remember(data.people, digits) { if (digits.isBlank()) null else data.people.firstOrNull { matches(it.name, it.number, digits) } }
-            if (match != null) TextButton(onClick = { onCall(match.number) }) { Text("${match.name} · ${match.number}") }
-            else TextButton(onClick = { onAddContact(digits) }, enabled = digits.isNotBlank()) { Text(stringResource(R.string.expressive_create_contact)) }
+            val numberMatches = remember(data.people, digits) {
+                if (digits.isBlank()) emptyList() else data.people.filter { matches(it.name, it.number, digits) }.take(3)
+            }
+            if (numberMatches.isNotEmpty()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    numberMatches.forEach { match ->
+                        TextButton(onClick = { onCall(match.number) }) {
+                            Text("${match.name} · ${match.number}")
+                        }
+                    }
+                }
+            } else {
+                TextButton(onClick = { onAddContact(digits) }, enabled = digits.isNotBlank()) {
+                    Text(stringResource(R.string.expressive_create_contact))
+                }
+            }
             DialerKeypad(onDigit = { updateInput(replaceDialpadSelection(input, it)) }, onLongDigit = { digit ->
                 when (digit) {
                     "0" -> updateInput(replaceDialpadSelection(input, "+"))
