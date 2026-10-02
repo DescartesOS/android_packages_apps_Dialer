@@ -57,11 +57,17 @@ class DialerRepository(private val context: Context) {
         val numberKeys = mutableMapOf<String, String>()
         val simNumbers = mutableMapOf<PhoneAccountHandle, Int?>()
         if (contactsAllowed) context.contentResolver.query(Phone.CONTENT_URI,
-            arrayOf(Phone.CONTACT_ID, Phone.LOOKUP_KEY, Phone.DISPLAY_NAME_PRIMARY, Phone.NUMBER, Phone.STARRED),
-            null, null, "${Phone.SORT_KEY_PRIMARY} ASC")?.use { cursor ->
+            arrayOf(Phone.CONTACT_ID, Phone.LOOKUP_KEY, Phone.DISPLAY_NAME_PRIMARY, Phone.NUMBER,
+                Phone.STARRED, Phone.IS_SUPER_PRIMARY, Phone.IS_PRIMARY),
+            null, null, "${Phone.SORT_KEY_PRIMARY} ASC, ${Phone.IS_SUPER_PRIMARY} DESC, " +
+                "${Phone.IS_PRIMARY} DESC, ${Phone._ID} ASC")?.use { cursor ->
+            val numberKeysByContact = mutableMapOf<Long, MutableSet<String>>()
             while (cursor.moveToNext()) {
                 val number = cursor.getString(3).orEmpty()
-                people += Person(cursor.getLong(0), cursor.getString(1).orEmpty(),
+                val contactId = cursor.getLong(0)
+                val numberKey = recentNumberKey(number, country).ifBlank { number }
+                if (!numberKeysByContact.getOrPut(contactId) { mutableSetOf() }.add(numberKey)) continue
+                people += Person(contactId, cursor.getString(1).orEmpty(),
                     cursor.getString(2).orEmpty().ifBlank { number }, number, cursor.getInt(4) != 0)
             }
         }

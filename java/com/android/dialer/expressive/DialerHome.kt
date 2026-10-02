@@ -128,6 +128,7 @@ fun DialerHome(
                 val contacts = remember(data.people, query, page) {
                     data.people.filter { (page != 1 || it.starred) && matches(it.name, it.number, query) }
                 }
+                val displayedContacts = if (page == 1) contacts.distinctBy { it.id } else contacts
                 when {
                     loading -> ExpressiveLoading(stringResource(R.string.expressive_loading))
                     error -> EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_load_failed),
@@ -178,13 +179,13 @@ fun DialerHome(
                                 Text(stringResource(R.string.expressive_photo_hint), Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            if (contacts.isEmpty()) item {
+                            if (displayedContacts.isEmpty()) item {
                                 EmptyDialerState(if (page == 1) DialerSymbol.Star else DialerSymbol.People,
                                     stringResource(if (page == 1) R.string.expressive_no_favorites else R.string.expressive_no_contacts),
                                     stringResource(if (query.isNotBlank()) R.string.expressive_no_results else if (page == 1) R.string.expressive_favorites_body else R.string.expressive_contacts_body))
                             }
                             if (page == 1) {
-                                items(contacts.chunked(2), key = { row -> "favorite_${row.first().id}:${row.first().number}" }) { row ->
+                                items(displayedContacts.chunked(2), key = { row -> "favorite_${row.first().id}" }) { row ->
                                     Row(Modifier.fillMaxWidth().animateItem().padding(vertical = 4.dp),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         row.forEach { contact ->
