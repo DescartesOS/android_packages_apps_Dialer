@@ -43,6 +43,7 @@ final class CallerNameAnnouncement implements InCallPresenter.InCallStateListene
     DialerCallListener, ContactInfoCache.ContactInfoCacheCallback,
     SharedPreferences.OnSharedPreferenceChangeListener {
   static final String KEY = "caller_name_announcement";
+  private static final String USE_CONTACT_NAME_KEY = "caller_name_announcement_use_contact_name";
 
   private final Context context;
   private final SharedPreferences preferences;
@@ -95,6 +96,10 @@ final class CallerNameAnnouncement implements InCallPresenter.InCallStateListene
 
   private boolean enabled() { return preferences.getBoolean(KEY, false); }
 
+  private boolean useContactName() {
+    return preferences.getBoolean(USE_CONTACT_NAME_KEY, false);
+  }
+
   private boolean isAudibleEnvironment() {
     AudioManager audio = context.getSystemService(AudioManager.class);
     if (audio == null || audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) return false;
@@ -138,8 +143,9 @@ final class CallerNameAnnouncement implements InCallPresenter.InCallStateListene
   @Override public void onContactInfoComplete(String id, ContactInfoCache.ContactCacheEntry entry) {
     if (!stillValid() || !callId.equals(id)) return;
     boolean privateNumber = call.getNumberPresentation() != TelecomManager.PRESENTATION_ALLOWED;
-    String name = entry == null ? null : entry.namePrimary;
-    if (TextUtils.isEmpty(name) && entry != null) name = entry.nameAlternative;
+    if (useContactName() && !privateNumber && (entry == null || !entry.isLocalContact())) return;
+    String name = useContactName() ? entry.namePrimary : call.getCnapName();
+    if (useContactName() && TextUtils.isEmpty(name)) name = entry.nameAlternative;
     if (!privateNumber && !TextUtils.isEmpty(name) && !name.equals(entry.number)) {
       speak(context.getString(R.string.caller_announcement_incoming, name));
     } else {

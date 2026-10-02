@@ -450,6 +450,8 @@
   <!-- Setting option name and description for speaking the incoming caller's name. -->
   <string name="caller_name_announcement_title">Caller name announcement</string>
   <string name="caller_name_announcement_summary">Speak incoming caller names aloud. Silent, vibrate, and Do Not Disturb modes are respected.</string>
+  <string name="caller_name_announcement_use_contact_name_title">Use saved contact name</string>
+  <string name="caller_name_announcement_use_contact_name_summary">Announce the name saved in Contacts instead of the network-provided caller name.</string>
 
   <!-- Spoken prompts for incoming calls. -->
   <string name="caller_announcement_incoming">Incoming call from %1$s</string>
