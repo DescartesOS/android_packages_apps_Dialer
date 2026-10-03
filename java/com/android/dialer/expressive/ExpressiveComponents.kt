@@ -150,7 +150,7 @@ fun FloatingDialerBar(
     val icons = listOf(DialerSymbol.History, DialerSymbol.Star, DialerSymbol.People, DialerSymbol.Voicemail)
     val haptic = LocalHapticFeedback.current
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shadowElevation = 8.dp, tonalElevation = 2.dp,
+        shadowElevation = 0.dp, tonalElevation = 2.dp,
         modifier = Modifier.widthIn(max = if (compact) 280.dp else 440.dp)
             .animateContentSize(spring(.85f, 500f))) {
         Row(Modifier.padding(6.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp),
