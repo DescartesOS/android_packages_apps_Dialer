@@ -48,4 +48,11 @@
 
     <string name="default_dialer_text">You must set Dialer as the default phone app to use it.</string>
     <string name="default_dialer_action">Set as default</string>
+
+    <string name="caller_screen_style_title">Caller screen style</string>
+    <string name="caller_screen_style_fullscreen">Fullscreen</string>
+    <string name="caller_screen_style_cookie">Cookie</string>
+    <string name="caller_screen_style_hyperos">HyperOS Style</string>
+    <string name="rounded_call_screen_controls_title">Call screen control UI</string>
+    <string name="rounded_call_screen_controls_summary">Use rounded controls and keypad with any caller screen style.</string>
 </resources>

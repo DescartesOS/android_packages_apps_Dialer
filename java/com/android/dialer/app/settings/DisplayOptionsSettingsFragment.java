@@ -17,30 +17,27 @@
 
 package com.android.dialer.app.settings;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.preference.Preference;
-import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.ListPreference;
 import androidx.preference.PreferenceManager;
-import androidx.preference.SwitchPreferenceCompat;
 
 import com.android.dialer.R;
+import com.android.dialer.expressive.CallerScreenStylePreferences;
 
 public class DisplayOptionsSettingsFragment extends com.android.dialer.expressive.ExpressivePreferenceFragment
     implements Preference.OnPreferenceChangeListener {
 
-  private static final String FULLSCREEN_CALLER_PHOTO = "fullscreen_caller_photo";
-
   private SharedPreferences mPrefs;
-  private boolean mEnabled;
-
-  private SwitchPreferenceCompat mFullscreenCallerPhoto;
+  private ListPreference mCallerScreenStyle;
 
   @Override
   public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
+    mPrefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+    String callerStyle = CallerScreenStylePreferences.readAndMigrate(mPrefs);
     addPreferencesFromResource(R.xml.display_options_settings);
 
     findPreference(getString(R.string.display_options_sort_list_by_key)).setVisible(
@@ -48,25 +45,20 @@ public class DisplayOptionsSettingsFragment extends com.android.dialer.expressiv
     findPreference(getString(R.string.display_options_view_names_as_key)).setVisible(
         getResources().getBoolean(R.bool.config_display_order_user_changeable));
 
-    Context context = getActivity();
-
-    mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-
-    mFullscreenCallerPhoto = findPreference(FULLSCREEN_CALLER_PHOTO);
-    mFullscreenCallerPhoto.setChecked(mPrefs.getBoolean(FULLSCREEN_CALLER_PHOTO, true));
-    mFullscreenCallerPhoto.setOnPreferenceChangeListener(this);
+    Preference callerPreference = findPreference(CallerScreenStylePreferences.KEY);
+    if (callerPreference instanceof ListPreference) {
+      mCallerScreenStyle = (ListPreference) callerPreference;
+      mCallerScreenStyle.setValue(callerStyle);
+      mCallerScreenStyle.setSummaryProvider(ListPreference.SimpleSummaryProvider.getInstance());
+      mCallerScreenStyle.setOnPreferenceChangeListener(this);
+    }
 
   }
 
   @Override
   public boolean onPreferenceChange(Preference preference, Object objValue) {
-    if (preference == mFullscreenCallerPhoto) {
-        boolean value = (Boolean) objValue;
-        mPrefs
-          .edit()
-          .putBoolean(FULLSCREEN_CALLER_PHOTO, value)
-          .apply();
-        return true;
+    if (preference == mCallerScreenStyle && objValue instanceof String) {
+      return mCallerScreenStyle.findIndexOfValue((String) objValue) >= 0;
     }
     return false;
   }

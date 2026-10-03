@@ -20,6 +20,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,10 +30,13 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.key.*
@@ -63,24 +69,55 @@ object ComposeInCallDialpad {
                 onDispose { field.removeTextChangedListener(watcher); fragment.onExpressiveDigit('0', false) }
             }
             DialerExpressiveTheme {
-                Surface(shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer) {
+                val roundedControls = rememberRoundedCallControls()
+                val colors = MaterialTheme.colorScheme
+                val dark = isSystemInDarkTheme()
+                val neutralBackground = if (dark) Color.Black.copy(alpha = .34f)
+                    else colors.surfaceContainerHigh.copy(alpha = .82f)
+                val neutralForeground = if (dark) Color.White else Color.Black
+                Surface(shape = if (roundedControls) RoundedCornerShape(32.dp)
+                        else RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                    color = if (roundedControls) Color.Transparent else colors.surfaceContainer,
+                    contentColor = if (roundedControls) neutralForeground else colors.onSurface) {
                     Column(Modifier.fillMaxWidth().heightIn(max = LocalConfiguration.current.screenHeightDp.dp * .65f)
                         .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
-                        Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        Surface(shape = RoundedCornerShape(24.dp),
+                            color = if (roundedControls) neutralBackground else colors.surfaceContainerHigh,
+                            contentColor = if (roundedControls) neutralForeground else colors.onSurface) {
                             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(digits, Modifier.weight(1f).padding(horizontal = 12.dp),
                                     style = MaterialTheme.typography.headlineMedium, maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                FilledTonalIconButton(onClick = { fragment.requireActivity().onBackPressed() }) {
-                                    Symbol(DialerSymbol.Close, stringResource(R.string.expressive_close_keypad))
+                                if (roundedControls) {
+                                    val interaction = remember { MutableInteractionSource() }
+                                    val pressed by interaction.collectIsPressedAsState()
+                                    val background by animateColorAsState(
+                                        if (pressed) Color.White.copy(alpha = .94f) else neutralBackground,
+                                        tween(100), label = "dtmf close color")
+                                    val foreground by animateColorAsState(
+                                        if (pressed) Color.Black else neutralForeground,
+                                        tween(100), label = "dtmf close content")
+                                    FilledTonalIconButton(
+                                        onClick = { fragment.requireActivity().onBackPressed() },
+                                        modifier = Modifier.clip(CircleShape),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = background, contentColor = foreground),
+                                        interactionSource = interaction) {
+                                        Symbol(DialerSymbol.Close, stringResource(R.string.expressive_close_keypad))
+                                    }
+                                } else {
+                                    FilledTonalIconButton(onClick = { fragment.requireActivity().onBackPressed() }) {
+                                        Symbol(DialerSymbol.Close, stringResource(R.string.expressive_close_keypad))
+                                    }
                                 }
                             }
                         }
                         listOf("123", "456", "789", "*0#").forEach { row ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 row.forEach { digit ->
-                                    DtmfKey(fragment, digit, Modifier.weight(1f))
+                                    if (roundedControls) Box(Modifier.weight(1f).padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
+                                        DtmfKey(fragment, digit, Modifier.size(60.dp), roundedControls = true)
+                                    } else DtmfKey(fragment, digit, Modifier.weight(1f))
                                 }
                             }
                         }
@@ -92,18 +129,27 @@ object ComposeInCallDialpad {
 }
 
 @Composable
-private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier) {
+private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier, roundedControls: Boolean = false) {
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (pressed) .92f else 1f, spring(.65f, 500f), label = "dtmf press")
     val radius by animateDpAsState(if (pressed) 16.dp else 32.dp, spring(.7f, 500f), label = "dtmf shape")
-    val background by animateColorAsState(if (pressed) MaterialTheme.colorScheme.primary
+    val dark = isSystemInDarkTheme()
+    val background by animateColorAsState(if (roundedControls && pressed) Color.White.copy(alpha = .94f)
+        else if (pressed) MaterialTheme.colorScheme.primary
+        else if (roundedControls) {
+            if (dark) Color.Black.copy(alpha = .34f)
+            else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .82f)
+        }
         else MaterialTheme.colorScheme.surfaceContainerHigh, tween(100), label = "dtmf color")
-    val foreground by animateColorAsState(if (pressed) MaterialTheme.colorScheme.onPrimary
+    val foreground by animateColorAsState(if (roundedControls) {
+            if (pressed || !dark) Color.Black else Color.White
+        } else if (pressed) MaterialTheme.colorScheme.onPrimary
         else MaterialTheme.colorScheme.onSurface, tween(100), label = "dtmf content")
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
-    Surface(modifier.padding(vertical = 4.dp).heightIn(min = 60.dp)
+    Surface((if (roundedControls) modifier else modifier.padding(vertical = 4.dp).heightIn(min = 60.dp))
         .graphicsLayer { scaleX = scale; scaleY = scale }
+        .then(if (roundedControls) Modifier.clip(CircleShape) else Modifier)
         .semantics {
             role = Role.Button
             contentDescription = digit.toString()
@@ -133,7 +179,8 @@ private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier) 
                     pressed = false; fragment.onExpressiveDigit(digit, false)
                 }
             })
-        }, shape = RoundedCornerShape(radius), color = background, contentColor = foreground) {
+        }, shape = if (roundedControls) CircleShape else RoundedCornerShape(radius),
+        color = background, contentColor = foreground) {
         Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
             Text(digit.toString(), style = MaterialTheme.typography.headlineMedium)
         }

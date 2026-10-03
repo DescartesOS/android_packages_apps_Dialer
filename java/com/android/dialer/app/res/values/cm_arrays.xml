@@ -26,4 +26,16 @@
         <item>"1"</item>
     </string-array>
 
+    <string-array name="caller_screen_style_entries">
+        <item>@string/caller_screen_style_fullscreen</item>
+        <item>@string/caller_screen_style_cookie</item>
+        <item>@string/caller_screen_style_hyperos</item>
+    </string-array>
+
+    <string-array name="caller_screen_style_values" translatable="false">
+        <item>fullscreen</item>
+        <item>cookie</item>
+        <item>hyperos</item>
+    </string-array>
+
 </resources>

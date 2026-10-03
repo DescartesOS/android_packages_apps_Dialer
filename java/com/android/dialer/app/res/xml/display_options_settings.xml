@@ -53,11 +53,20 @@
       android:defaultValue="true"
       app:iconSpaceReserved="false"/>
 
+  <!-- The settings fragment migrates the legacy boolean before inflation. -->
+  <ListPreference
+      android:key="caller_screen_style"
+      android:title="@string/caller_screen_style_title"
+      android:dialogTitle="@string/caller_screen_style_title"
+      android:entries="@array/caller_screen_style_entries"
+      android:entryValues="@array/caller_screen_style_values"
+      app:iconSpaceReserved="false"/>
+
   <SwitchPreferenceCompat
-      android:key="fullscreen_caller_photo"
-      android:title="@string/fullscreen_caller_photo_title"
-      android:summary="@string/fullscreen_caller_photo_summary"
-      android:defaultValue="true"
+      android:key="rounded_call_screen_controls"
+      android:title="@string/rounded_call_screen_controls_title"
+      android:summary="@string/rounded_call_screen_controls_summary"
+      android:defaultValue="false"
       app:iconSpaceReserved="false"/>
 
   <SwitchPreferenceCompat
