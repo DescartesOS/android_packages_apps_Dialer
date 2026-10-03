@@ -291,11 +291,19 @@ fun DialerHome(
                 if (digits.isBlank()) emptyList() else data.people.filter { matches(it.name, it.number, digits) }.take(3)
             }
             if (numberMatches.isNotEmpty()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
                     numberMatches.forEach { match ->
-                        TextButton(onClick = { onCall(match.number) }) {
-                            Text("${match.name} · ${match.number}")
-                        }
+                        TextButton(
+                            onClick = { onCall(match.number) },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                            content = {
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                                    Text("${match.name} · ${match.number}", maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        )
                     }
                 }
             } else {
