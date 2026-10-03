@@ -214,6 +214,7 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
         key.contains("hide_call_status_bar") -> DialerSymbol.Accessibility
         key.contains("compact_floating_bar") -> DialerSymbol.History
         key.contains("hide_keyboard_on_scroll") -> DialerSymbol.Keypad
+        key == "group_contacts_by_name" -> DialerSymbol.People
         key.contains("hide_saved_contact") -> DialerSymbol.Lock
         key.contains("caller_screen_spam_warning") -> DialerSymbol.Block
         key.contains("ringtone") || key.contains("notification") -> DialerSymbol.Bell

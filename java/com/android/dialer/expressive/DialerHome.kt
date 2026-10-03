@@ -55,6 +55,7 @@ import kotlinx.coroutines.awaitCancellation
 fun DialerHome(
     data: DialerData, loading: Boolean, error: Boolean, tab: Int, query: String, digits: String,
     keypad: Boolean, compactFloatingBar: Boolean = false, hideKeyboardOnScroll: Boolean = true,
+    groupContactsByName: Boolean = true,
     onTab: (Int) -> Unit, onQuery: (String) -> Unit, onDigits: (String) -> String,
     onKeypad: (Boolean) -> Unit, onCall: (String) -> Unit, onVideo: (String) -> Unit, onVoicemail: () -> Unit,
     onPermissions: () -> Unit, onRetry: () -> Unit, onStar: (Person) -> Unit,
@@ -145,6 +146,9 @@ fun DialerHome(
                     data.people.filter { (page != 1 || it.starred) && matches(it.name, it.number, query) }
                 }
                 val displayedContacts = if (page == 1) contacts.distinctBy { it.id } else contacts
+                val contactNameGroups = remember(contacts, page, groupContactsByName) {
+                    if (page == 2 && groupContactsByName) groupContactsByDisplayName(contacts) else emptyList()
+                }
                 when {
                     loading -> ExpressiveLoading(stringResource(R.string.expressive_loading))
                     error -> EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_load_failed),
@@ -225,6 +229,35 @@ fun DialerHome(
                                             }
                                         }
                                         if (row.size == 1) Spacer(Modifier.weight(1f))
+                                    }
+                                }
+                            } else if (page == 2 && groupContactsByName) {
+                                itemsIndexed(contactNameGroups, key = { index, group ->
+                                    if (group.name.isNotBlank()) "contact_name:${group.name}" else "unnamed_contact:$index"
+                                }) { _, group ->
+                                    Surface(modifier = Modifier.animateItem(), shape = RoundedCornerShape(24.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                                        Column(Modifier.fillMaxWidth()) {
+                                            Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically) {
+                                                ContactAvatar(group.name, number = group.people.first().number)
+                                                Text(group.name, Modifier.weight(1f).padding(horizontal = 12.dp),
+                                                    fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            }
+                                            group.people.forEach { contact ->
+                                                Row(Modifier.fillMaxWidth().combinedClickable(onClick = { person = contact },
+                                                    onLongClick = { person = contact }).padding(start = 14.dp, end = 14.dp),
+                                                    verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(contact.number, Modifier.weight(1f).padding(horizontal = 12.dp),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    IconButton(onClick = { onCall(contact.number) }) {
+                                                        Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, group.name))
+                                                    }
+                                                }
+                                            }
+                                            Spacer(Modifier.height(8.dp))
+                                        }
                                     }
                                 }
                             } else items(contacts, key = { "${it.id}:${it.number}" }) { contact ->

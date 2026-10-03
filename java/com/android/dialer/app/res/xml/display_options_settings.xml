@@ -47,6 +47,13 @@
       app:iconSpaceReserved="false"/>
 
   <SwitchPreferenceCompat
+      android:key="group_contacts_by_name"
+      android:title="@string/group_contacts_by_name_title"
+      android:summary="@string/group_contacts_by_name_summary"
+      android:defaultValue="true"
+      app:iconSpaceReserved="false"/>
+
+  <SwitchPreferenceCompat
       android:key="fullscreen_caller_photo"
       android:title="@string/fullscreen_caller_photo_title"
       android:summary="@string/fullscreen_caller_photo_summary"

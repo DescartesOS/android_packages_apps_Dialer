@@ -56,6 +56,7 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
     private var keypad by mutableStateOf(false)
     private var compactFloatingBar by mutableStateOf(false)
     private var hideKeyboardOnScroll by mutableStateOf(true)
+    private var groupContactsByName by mutableStateOf(true)
     private var job: Job? = null
     private var observing = false
     private var photoNumber: String? = null
@@ -102,6 +103,7 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
                     DialerHome(data, loading, error, tab, query, digits, keypad,
                         compactFloatingBar = compactFloatingBar,
                         hideKeyboardOnScroll = hideKeyboardOnScroll,
+                        groupContactsByName = groupContactsByName,
                         onTab = { tab = it; query = "" }, onQuery = { query = it },
                         onDigits = { updateDigits(it) }, onKeypad = { keypad = it },
                         onCall = { call(it) }, onVideo = { call(it, true) }, onVoicemail = { voicemail() },
@@ -205,6 +207,8 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
             .getBoolean("compact_floating_bar", false)
         hideKeyboardOnScroll = PreferenceManager.getDefaultSharedPreferences(activity)
             .getBoolean("hide_keyboard_on_scroll", true)
+        groupContactsByName = PreferenceManager.getDefaultSharedPreferences(activity)
+            .getBoolean("group_contacts_by_name", true)
         refresh()
         if (!observing) {
             activity.contentResolver.registerContentObserver(Calls.CONTENT_URI, true, observer)

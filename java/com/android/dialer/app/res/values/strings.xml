@@ -473,6 +473,8 @@
   <string name="compact_floating_bar_summary">Show only icons in the floating navigation bar</string>
   <string name="hide_keyboard_on_scroll_title">Hide keyboard when scrolling</string>
   <string name="hide_keyboard_on_scroll_summary">Automatically hide the search keyboard when browsing results</string>
+  <string name="group_contacts_by_name_title">Group contacts by name</string>
+  <string name="group_contacts_by_name_summary">Show contacts with the same name together with all their phone numbers</string>
 
   <!-- Setting option name to enable or disable DTMF tone sound [CHAR LIMIT=30] -->
   <string name="dtmf_tone_enable_title">Keypad tones</string>
