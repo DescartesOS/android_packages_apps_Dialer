@@ -16,18 +16,22 @@
 
 package com.android.dialer.expressive
 
+import android.app.WallpaperManager
 import android.content.SharedPreferences
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toPixelMap
@@ -38,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.preference.PreferenceManager
 
 internal const val CALLER_STYLE_FULLSCREEN = "fullscreen"
@@ -114,7 +119,12 @@ internal fun rememberHyperOsForeground(photo: ImageBitmap?, hasFallback: Boolean
 
 @Composable
 internal fun HyperOsCallerBackground(photo: ImageBitmap?, modifier: Modifier = Modifier, fallbackPhotoResId: Int = 0) {
+    val context = LocalContext.current
+    val wallpaper = remember(context) {
+        runCatching { WallpaperManager.getInstance(context).drawable?.toBitmap()?.asImageBitmap() }.getOrNull()
+    }
     val painter = when {
+        wallpaper != null -> remember(wallpaper) { BitmapPainter(wallpaper) }
         photo != null -> remember(photo) { BitmapPainter(photo) }
         fallbackPhotoResId != 0 -> painterResource(fallbackPhotoResId)
         else -> null
@@ -128,5 +138,25 @@ internal fun HyperOsCallerBackground(photo: ImageBitmap?, modifier: Modifier = M
                 scaleY = 1.08f
                 renderEffect = blur
             }, contentScale = ContentScale.Crop)
+    }
+}
+
+@Composable
+internal fun HyperOsCallerAvatar(
+    photo: ImageBitmap?,
+    modifier: Modifier = Modifier,
+    fallbackPhotoResId: Int = 0
+) {
+    val painter = when {
+        photo != null -> remember(photo) { BitmapPainter(photo) }
+        fallbackPhotoResId != 0 -> painterResource(fallbackPhotoResId)
+        else -> null
+    }
+    Surface(modifier, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface) {
+        if (painter != null) Image(painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Symbol(DialerSymbol.Person, modifier = Modifier.fillMaxSize(.7f))
+        }
     }
 }

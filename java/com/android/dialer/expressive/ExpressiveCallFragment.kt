@@ -214,6 +214,10 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                 RoundedCallerAvatar(photo, Modifier.size(avatarSize), fallbackPhotoResId)
                                 Spacer(Modifier.height(if (compactIdentity) 12.dp else 20.dp))
                             } else {
+                                if (hyperOs) {
+                                    HyperOsCallerAvatar(photo, Modifier.size(if (compactIdentity) 64.dp else 76.dp), fallbackPhotoResId)
+                                    Spacer(Modifier.height(14.dp))
+                                }
                                 CallerNameAndNumber(name, number, compactIdentity, hyperOs)
                                 if (hyperOs) primaryInfoState.location()?.takeIf { it.isNotBlank() }?.let {
                                     Text(it, Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodyLarge,
