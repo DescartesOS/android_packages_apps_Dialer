@@ -19,6 +19,8 @@ package com.android.dialer.expressive
 
 import android.Manifest
 import android.content.SharedPreferences
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.telecom.CallAudioState
 import android.text.format.DateUtils
@@ -60,6 +62,8 @@ import com.android.incallui.audioroute.AudioRouteSelectorDialogFragment.AudioRou
 import kotlinx.coroutines.delay
 import com.android.dialer.spam.CarrierCallIdentity
 
+private const val ROUNDED_MESSAGE = -1002
+
 open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, AudioRouteSelectorPresenter {
     protected var primaryInfoState by mutableStateOf(PrimaryInfo.empty())
     protected var primaryCallState by mutableStateOf(PrimaryCallState.empty())
@@ -100,7 +104,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 val roundedControls = PreferenceManager.getDefaultSharedPreferences(context)
                     .getBoolean(ROUNDED_CALL_CONTROLS_KEY, false)
                 findViewById<FrameLayout>(R.id.incall_dialpad_container).updateLayoutParams<FrameLayout.LayoutParams> {
-                    bottomMargin = ((if (roundedControls) 152 else 80) * resources.displayMetrics.density).toInt() +
+                    bottomMargin = ((if (roundedControls) 176 else 80) * resources.displayMetrics.density).toInt() +
                         insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
                 }
                 insets
@@ -263,14 +267,18 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                             if (answering) AnswerActions() else {
                                 AnimatedVisibility(!dialpad && primaryInfoState.showInCallButtonGrid()) {
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        val buttons = (if (roundedControls) listOf(BUTTON_MUTE, BUTTON_HOLD, BUTTON_RECORD_CALL,
-                                            BUTTON_ADD_CALL, BUTTON_SWAP, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
+                                        val buttons = (if (roundedControls) listOf(BUTTON_UPGRADE_TO_VIDEO, BUTTON_ADD_CALL, ROUNDED_MESSAGE,
+                                            BUTTON_MUTE, BUTTON_HOLD, BUTTON_RECORD_CALL,
+                                            BUTTON_SWAP, BUTTON_MERGE,
                                             BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM,
                                             BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)
                                         else listOf(BUTTON_AUDIO, BUTTON_MUTE, BUTTON_DIALPAD, BUTTON_HOLD,
                                             BUTTON_ADD_CALL, BUTTON_SWAP, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
                                             BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM, BUTTON_RECORD_CALL,
-                                            BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)).filter { shown[it] == true }
+                                            BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)).filter {
+                                                 it < 0 || shown[it] == true || (roundedControls &&
+                                                     (it == BUTTON_UPGRADE_TO_VIDEO || it == BUTTON_RECORD_CALL))
+                                            }
                                         buttons.chunked(3).forEach { row ->
                                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 row.forEach { id -> CallControl(id, Modifier.weight(1f), roundedControls) }
@@ -288,7 +296,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                         })
                 }
                 if (!answering) Box(Modifier.align(Alignment.BottomCenter).safeDrawingPadding()
-                    .padding(horizontal = 24.dp).padding(top = 16.dp, bottom = if (roundedControls) 40.dp else 16.dp)) {
+                    .padding(horizontal = 24.dp).padding(top = 16.dp, bottom = if (roundedControls) 64.dp else 16.dp)) {
                     if (roundedControls) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.Top) {
                         if (primaryInfoState.showInCallButtonGrid() && shown[BUTTON_AUDIO] == true)
@@ -373,6 +381,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     @Composable
     private fun CallControl(id: Int, modifier: Modifier, roundedControls: Boolean = false) {
         val symbol = when (id) {
+            ROUNDED_MESSAGE -> DialerSymbol.Message
             BUTTON_AUDIO -> when (audio?.route) {
                 CallAudioState.ROUTE_BLUETOOTH -> DialerSymbol.Bluetooth
                 CallAudioState.ROUTE_WIRED_HEADSET -> DialerSymbol.Headset
@@ -386,6 +395,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
             else -> DialerSymbol.Swap
         }
         val label = stringResource(when (id) {
+            ROUNDED_MESSAGE -> R.string.expressive_message
             BUTTON_AUDIO -> when (audio?.route) {
                 CallAudioState.ROUTE_BLUETOOTH -> R.string.expressive_bluetooth
                 CallAudioState.ROUTE_WIRED_HEADSET -> R.string.expressive_headset
@@ -404,7 +414,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
             BUTTON_DIALPAD -> roundedControls && dialpad; else -> false }
         if (roundedControls) {
             HyperOsCallControl(symbol, label, onClick = { clickControl(id) }, modifier = modifier,
-                selected = selected, enabled = controlsEnabled && enabledButtons[id] != false)
+                selected = selected, enabled = controlsEnabled &&
+                    (id < 0 || (shown[id] == true && enabledButtons[id] == true)))
             return
         }
         val monochromeActive = selected && LocalMonochromeTheme.current
@@ -425,6 +436,12 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     }
     private fun clickControl(id: Int) {
         when (id) {
+            ROUNDED_MESSAGE -> {
+                val number = primaryInfoState.number().orEmpty()
+                if (number.isNotBlank()) runCatching {
+                    startActivity(Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)))
+                }
+            }
             BUTTON_AUDIO -> {
                 val audioState = buttonDelegate.currentAudioState
                 if (audioState.supportedRouteMask and CallAudioState.ROUTE_BLUETOOTH == 0) {

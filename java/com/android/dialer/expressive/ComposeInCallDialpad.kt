@@ -149,7 +149,7 @@ private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier, 
     val haptic = LocalHapticFeedback.current
     Surface((if (roundedControls) modifier else modifier.padding(vertical = 4.dp).heightIn(min = 60.dp))
         .graphicsLayer { scaleX = scale; scaleY = scale }
-        .then(if (roundedControls) Modifier.clip(CircleShape) else Modifier)
+        .then(if (roundedControls) Modifier.clip(RoundedCornerShape(radius)) else Modifier)
         .semantics {
             role = Role.Button
             contentDescription = digit.toString()
@@ -179,7 +179,7 @@ private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier, 
                     pressed = false; fragment.onExpressiveDigit(digit, false)
                 }
             })
-        }, shape = if (roundedControls) CircleShape else RoundedCornerShape(radius),
+        }, shape = RoundedCornerShape(radius),
         color = background, contentColor = foreground) {
         Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
             Text(digit.toString(), style = MaterialTheme.typography.headlineMedium)
