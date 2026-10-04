@@ -33,6 +33,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import com.android.dialer.R;
+import com.android.dialer.dialpadview.SpecialCharSequenceMgr;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.dialpadview.DialpadKeyButton;
 import com.android.dialer.dialpadview.DialpadKeyButton.OnPressedListener;
@@ -192,6 +193,10 @@ public class DialpadFragment extends BaseFragment<DialpadPresenter, DialpadUi>
   /** Starts the slide up animation for the Dialpad keys when the Dialpad is revealed. */
   public void onExpressiveDigit(char digit, boolean pressed) {
     if (pressed) {
+      appendDigitsToField(digit);
+      if (SpecialCharSequenceMgr.handleChars(getActivity(), getDtmfText(), dtmfDialerField)) {
+        dtmfDialerField.getText().clear();
+      }
       getPresenter().processDtmf(digit);
     } else {
       getPresenter().stopDtmf();

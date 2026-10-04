@@ -142,7 +142,8 @@ class ExpressiveMainActivityPeer(private val activity: MainActivity) : MainActiv
     }
     private fun updateDigits(value: String): String {
         digits = sanitizeDialpadNumber(value)
-        if (digits.endsWith('#') && SpecialCharSequenceMgr.handleChars(activity, digits, null)) digits = ""
+        if ((digits.endsWith('#') || digits.endsWith('*')) &&
+            SpecialCharSequenceMgr.handleChars(activity, digits, null)) digits = ""
         return digits
     }
     private fun call(number: String, video: Boolean = false) {
