@@ -42,6 +42,9 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.Collections;
+import java.util.List;
+
 /** Manages changes for an incoming call screen. */
 public class AnswerScreenPresenter
     implements AnswerScreenDelegate, DialerCall.CannedTextResponsesLoadedListener {
@@ -60,7 +63,7 @@ public class AnswerScreenPresenter
     this.answerScreen = Assert.isNotNull(answerScreen);
     this.call = Assert.isNotNull(call);
     if (isSmsResponseAllowed(call)) {
-      answerScreen.setTextResponses(call.getCannedSmsResponses());
+      answerScreen.setTextResponses(getCannedSmsResponses(call));
     }
     call.addCannedTextResponsesLoadedListener(this);
 
@@ -179,8 +182,13 @@ public class AnswerScreenPresenter
   @Override
   public void onCannedTextResponsesLoaded(DialerCall call) {
     if (isSmsResponseAllowed(call)) {
-      answerScreen.setTextResponses(call.getCannedSmsResponses());
+      answerScreen.setTextResponses(getCannedSmsResponses(call));
     }
+  }
+
+  private List<String> getCannedSmsResponses(DialerCall call) {
+    List<String> responses = call.getCannedSmsResponses();
+    return responses == null ? Collections.emptyList() : responses;
   }
 
   @Override

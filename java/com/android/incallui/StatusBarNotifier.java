@@ -288,9 +288,10 @@ public class StatusBarNotifier
         || callState == DialerCallState.CALL_WAITING
         || isVideoUpgradeRequest) {
         notificationType =
-            InCallPresenter.getInstance().isShowingInCallUi()
-                ? NOTIFICATION_INCOMING_CALL_QUIET
-                : NOTIFICATION_INCOMING_CALL;
+            callState == DialerCallState.CALL_WAITING
+                    || !InCallPresenter.getInstance().isShowingInCallUi()
+                ? NOTIFICATION_INCOMING_CALL
+                : NOTIFICATION_INCOMING_CALL_QUIET;
     } else {
       notificationType = NOTIFICATION_IN_CALL;
     }
