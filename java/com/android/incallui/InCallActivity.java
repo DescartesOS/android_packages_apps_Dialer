@@ -17,6 +17,7 @@
 
 package com.android.incallui;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.AppTask;
 import android.app.ActivityManager.TaskDescription;
@@ -28,6 +29,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Trace;
 import android.telecom.Call;
@@ -575,7 +577,19 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       // It's also necessary in the sense of it's excluded from recents. So whenever the activity
       // finishes, the task should also be removed since it doesn't make sense to go back to it in
       // anyway anymore.
+      boolean animateClose =
+          isVisible
+              && !isChangingConfigurations()
+              && !isRecreating
+              && !CallList.getInstance().hasLiveCall();
+      if (animateClose && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        overrideActivityTransition(
+            Activity.OVERRIDE_TRANSITION_CLOSE, R.anim.incall_close_enter, R.anim.incall_close_exit);
+      }
       super.finishAndRemoveTask();
+      if (animateClose && Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        overridePendingTransition(R.anim.incall_close_enter, R.anim.incall_close_exit);
+      }
     }
   }
 
