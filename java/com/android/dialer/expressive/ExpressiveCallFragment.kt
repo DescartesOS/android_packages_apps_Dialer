@@ -276,8 +276,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                             BUTTON_ADD_CALL, BUTTON_SWAP, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
                                             BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM, BUTTON_RECORD_CALL,
                                             BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)).filter {
-                                                 it < 0 || shown[it] == true || (roundedControls &&
-                                                     (it == BUTTON_UPGRADE_TO_VIDEO || it == BUTTON_RECORD_CALL))
+                                                (it == ROUNDED_MESSAGE && primaryInfoState.number().orEmpty().isNotBlank()) ||
+                                                    shown[it] == true
                                             }
                                         buttons.chunked(3).forEach { row ->
                                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -415,7 +415,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         if (roundedControls) {
             HyperOsCallControl(symbol, label, onClick = { clickControl(id) }, modifier = modifier,
                 selected = selected, enabled = controlsEnabled &&
-                    (id < 0 || (shown[id] == true && enabledButtons[id] == true)))
+                    ((id == ROUNDED_MESSAGE && primaryInfoState.number().orEmpty().isNotBlank()) ||
+                        (shown[id] == true && enabledButtons[id] != false)))
             return
         }
         val monochromeActive = selected && LocalMonochromeTheme.current
