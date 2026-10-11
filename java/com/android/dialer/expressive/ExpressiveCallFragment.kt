@@ -32,6 +32,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
@@ -63,6 +65,17 @@ import kotlinx.coroutines.delay
 import com.android.dialer.spam.CarrierCallIdentity
 
 private const val ROUNDED_MESSAGE = -1002
+private const val CALL_CONTROLS_PER_PAGE = 6
+private const val CALL_CONTROL_COLUMNS = 3
+private const val CALL_CONTROL_ROWS = 2
+private val CALL_CONTROL_ROW_HEIGHT = 104.dp
+private val CALL_CONTROL_PAGER_HEIGHT = CALL_CONTROL_ROW_HEIGHT * CALL_CONTROL_ROWS.toFloat() + 8.dp
+private val ROUNDED_CONTROL_IDS = listOf(
+    BUTTON_UPGRADE_TO_VIDEO, BUTTON_ADD_CALL, ROUNDED_MESSAGE,
+    BUTTON_MUTE, BUTTON_HOLD, BUTTON_RECORD_CALL,
+    BUTTON_SWAP, BUTTON_MERGE,
+    BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM,
+    BUTTON_MANAGE_VOICE_CONFERENCE)
 
 open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, AudioRouteSelectorPresenter {
     protected var primaryInfoState by mutableStateOf(PrimaryInfo.empty())
@@ -72,8 +85,9 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     private lateinit var buttonDelegate: InCallButtonUiDelegate
     private val shown = mutableStateMapOf<Int, Boolean>()
     private val enabledButtons = mutableStateMapOf<Int, Boolean>()
-    private var controlsEnabled by mutableStateOf(true)
-    private var endEnabled by mutableStateOf(true)
+    private var buttonUiReady by mutableStateOf(false)
+    private var controlsEnabled by mutableStateOf(false)
+    private var endEnabled by mutableStateOf(false)
     private var held by mutableStateOf(false)
     private var audio by mutableStateOf<CallAudioState?>(null)
     private var recording by mutableStateOf(false)
@@ -84,7 +98,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     private var showAudioRoutes by mutableStateOf(false)
     protected open val answering = false
     private val recordPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
-        if (grants.values.all { it }) buttonDelegate.callRecordClicked(true)
+        if (grants.isNotEmpty() && grants.values.all { it } && !recording && isControlEnabled(BUTTON_RECORD_CALL))
+            buttonDelegate.callRecordClicked(true)
     }
     private val bluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         if (isAdded) openAudioRoutes()
@@ -119,11 +134,19 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         if (!answering) {
             buttonDelegate = (requireActivity() as InCallButtonUiDelegateFactory).newInCallButtonUiDelegate()
             buttonDelegate.onInCallButtonUiReady(this)
+            buttonUiReady = true
         }
     }
     override fun onResume() { super.onResume(); screenDelegate.onInCallScreenResumed() }
     override fun onPause() { screenDelegate.onInCallScreenPaused(); super.onPause() }
     override fun onDestroyView() {
+        buttonUiReady = false
+        controlsEnabled = false
+        endEnabled = false
+        showAudioRoutes = false
+        shown.clear()
+        enabledButtons.clear()
+        conference = false
         if (!answering) buttonDelegate.onInCallButtonUiUnready()
         screenDelegate.onInCallScreenUnready()
         super.onDestroyView()
@@ -251,14 +274,14 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                             AndroidView(factory = { ctx -> FrameLayout(ctx).apply { id = R.id.incall_location_holder } },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = if (locationVisible) 120.dp else 0.dp))
                             if (secondaryInfoState.shouldShow()) {
-                                FilledTonalButton(onClick = { screenDelegate.onSecondaryInfoClicked() },
+                                FilledTonalButton(onClick = { clickControl(BUTTON_SWITCH_TO_SECONDARY) },
                                     colors = if (roundedControls) ButtonDefaults.filledTonalButtonColors(
                                         containerColor = Color.White.copy(alpha = .94f),
                                         contentColor = Color.Black,
                                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .35f),
                                         disabledContentColor = LocalContentColor.current.copy(alpha = .38f))
                                     else ButtonDefaults.filledTonalButtonColors(),
-                                    enabled = primaryCallState.swapToSecondaryButtonState() == PrimaryCallState.ButtonState.ENABLED) {
+                                    enabled = isControlEnabled(BUTTON_SWITCH_TO_SECONDARY)) {
                                     Symbol(DialerSymbol.Swap)
                                     Text(secondaryInfoState.name() ?: stringResource(R.string.expressive_on_hold), Modifier.padding(start = 8.dp))
                                 }
@@ -267,29 +290,49 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                             if (answering) AnswerActions() else {
                                 AnimatedVisibility(!dialpad && primaryInfoState.showInCallButtonGrid()) {
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        val buttons = (if (roundedControls) listOf(BUTTON_UPGRADE_TO_VIDEO, BUTTON_ADD_CALL, ROUNDED_MESSAGE,
-                                            BUTTON_MUTE, BUTTON_HOLD, BUTTON_RECORD_CALL,
-                                            BUTTON_SWAP, BUTTON_MERGE,
-                                            BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM,
-                                            BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)
+                                        val buttons = if (roundedControls) ROUNDED_CONTROL_IDS
                                         else listOf(BUTTON_AUDIO, BUTTON_MUTE, BUTTON_DIALPAD, BUTTON_HOLD,
                                             BUTTON_ADD_CALL, BUTTON_SWAP, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
                                             BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM, BUTTON_RECORD_CALL,
-                                            BUTTON_MANAGE_VOICE_CONFERENCE, BUTTON_SWITCH_TO_SECONDARY)).filter {
-                                                (it == ROUNDED_MESSAGE && primaryInfoState.number().orEmpty().isNotBlank()) ||
-                                                    shown[it] == true
-                                            }
-                                        buttons.chunked(3).forEach { row ->
-                                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                row.forEach { id -> CallControl(id, Modifier.weight(1f), roundedControls) }
-                                                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                                            BUTTON_MANAGE_VOICE_CONFERENCE)
+                                        val totalPages = { (buttons.size + CALL_CONTROLS_PER_PAGE - 1) /
+                                            CALL_CONTROLS_PER_PAGE }
+                                        val pagerState = rememberPagerState(initialPage = 0, pageCount = totalPages)
+                                        LaunchedEffect(totalPages()) {
+                                            val lastPage = (totalPages() - 1).coerceAtLeast(0)
+                                            if (pagerState.currentPage > lastPage) pagerState.scrollToPage(lastPage)
+                                        }
+                                        HorizontalPager(
+                                            state = pagerState,
+                                            modifier = Modifier.fillMaxWidth().height(CALL_CONTROL_PAGER_HEIGHT),
+                                        ) { page ->
+                                            Column(
+                                                Modifier.fillMaxWidth().height(CALL_CONTROL_PAGER_HEIGHT),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                repeat(CALL_CONTROL_ROWS) { row ->
+                                                    Row(
+                                                        Modifier.fillMaxWidth().height(CALL_CONTROL_ROW_HEIGHT),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    ) {
+                                                        repeat(CALL_CONTROL_COLUMNS) { column ->
+                                                            val index = page * CALL_CONTROLS_PER_PAGE +
+                                                                row * CALL_CONTROL_COLUMNS + column
+                                                            val id = buttons.getOrNull(index)
+                                                            if (id == null) {
+                                                                Spacer(Modifier.weight(1f).fillMaxHeight())
+                                                            } else {
+                                                                key(id) {
+                                                                    CallControl(id, Modifier.weight(1f).fillMaxHeight(), roundedControls)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                         if (recording) Text(stringResource(R.string.expressive_recording_duration, DateUtils.formatElapsedTime(recordingDuration / 1000)),
                                             color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-                                        if (conference && shown[BUTTON_MANAGE_VOICE_CONFERENCE] != true) TextButton(onClick = { screenDelegate.onManageConferenceClicked() }) {
-                                            Text(stringResource(R.string.expressive_manage_conference))
-                                        }
                                     }
                                 }
                             }
@@ -299,16 +342,16 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                     .padding(horizontal = 24.dp).padding(top = 16.dp, bottom = if (roundedControls) 64.dp else 16.dp)) {
                     if (roundedControls) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.Top) {
-                        if (primaryInfoState.showInCallButtonGrid() && shown[BUTTON_AUDIO] == true)
+                        if (primaryInfoState.showInCallButtonGrid())
                             CallControl(BUTTON_AUDIO, Modifier.weight(1f), roundedControls = true)
                         else Spacer(Modifier.weight(1f))
                         HyperOsCallControl(DialerSymbol.EndCall, stringResource(R.string.expressive_end_call),
-                            onClick = { screenDelegate.onEndCallClicked() }, enabled = endEnabled,
+                            onClick = { endCall() }, enabled = endEnabled,
                             endCall = true, modifier = Modifier.weight(1f))
-                        if (primaryInfoState.showInCallButtonGrid() && shown[BUTTON_DIALPAD] == true)
+                        if (primaryInfoState.showInCallButtonGrid())
                             CallControl(BUTTON_DIALPAD, Modifier.weight(1f), roundedControls = true)
                         else Spacer(Modifier.weight(1f))
-                    } else ExpressiveTile(onClick = { screenDelegate.onEndCallClicked() }, enabled = endEnabled,
+                    } else ExpressiveTile(onClick = { endCall() }, enabled = endEnabled,
                         modifier = Modifier.widthIn(max = 260.dp).fillMaxWidth().heightIn(min = 64.dp),
                         color = EndCallRed, contentColor = Color.White) {
                         Symbol(DialerSymbol.EndCall)
@@ -317,9 +360,11 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 }
             }
         }
-        if (showAudioRoutes && !answering) AudioRouteSheet(audio ?: buttonDelegate.currentAudioState,
+        val audioEnabled = isControlEnabled(BUTTON_AUDIO)
+        LaunchedEffect(audioEnabled) { if (!audioEnabled) showAudioRoutes = false }
+        if (showAudioRoutes && audioEnabled) AudioRouteSheet(audio ?: buttonDelegate.currentAudioState,
             onDismiss = { showAudioRoutes = false }, onSelect = { route ->
-                showAudioRoutes = false; buttonDelegate.setAudioRoute(route)
+                showAudioRoutes = false; onAudioRouteSelected(route)
             })
     }
     @Composable
@@ -412,18 +457,17 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         val selected = when (id) { BUTTON_AUDIO -> audio?.route == CallAudioState.ROUTE_SPEAKER
             BUTTON_MUTE -> audio?.isMuted == true; BUTTON_HOLD -> held; BUTTON_RECORD_CALL -> recording;
             BUTTON_DIALPAD -> roundedControls && dialpad; else -> false }
+        val enabled = isControlEnabled(id)
         if (roundedControls) {
             HyperOsCallControl(symbol, label, onClick = { clickControl(id) }, modifier = modifier,
-                selected = selected, enabled = controlsEnabled &&
-                    ((id == ROUNDED_MESSAGE && primaryInfoState.number().orEmpty().isNotBlank()) ||
-                        (shown[id] == true && enabledButtons[id] != false)))
+                selected = selected, enabled = enabled)
             return
         }
         val monochromeActive = selected && LocalMonochromeTheme.current
         val dark = isSystemInDarkTheme()
         val colors = MaterialTheme.colorScheme
         ExpressiveTile(onClick = { clickControl(id) }, modifier = modifier.semantics { this.selected = selected },
-            selected = selected, enabled = controlsEnabled && enabledButtons[id] != false,
+            selected = selected, enabled = enabled,
             color = if (monochromeActive) {
                 if (dark) Color.White else Color.Black
             } else if (selected) colors.primaryContainer else colors.surfaceContainerHigh,
@@ -435,8 +479,27 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
             }
         }
     }
+    private fun controlAction(id: Int): Int =
+        if (id == BUTTON_SWAP && shown[BUTTON_SWAP] != true) BUTTON_SWITCH_TO_SECONDARY else id
+
+    private fun isControlEnabled(id: Int): Boolean {
+        if (!buttonUiReady || !controlsEnabled || !primaryInfoState.showInCallButtonGrid()) return false
+        if (dialpad && id != BUTTON_AUDIO && id != BUTTON_DIALPAD && id != BUTTON_SWITCH_TO_SECONDARY) return false
+        if (id == ROUNDED_MESSAGE) {
+            return primaryInfoState.numberPresentation() == android.provider.CallLog.Calls.PRESENTATION_ALLOWED &&
+                primaryInfoState.number().orEmpty().isNotBlank()
+        }
+        val action = controlAction(id)
+        return shown[action] == true && enabledButtons[action] != false
+    }
+
+    private fun endCall() {
+        if (endEnabled && isAdded && ::screenDelegate.isInitialized) screenDelegate.onEndCallClicked()
+    }
+
     private fun clickControl(id: Int) {
-        when (id) {
+        if (!isControlEnabled(id)) return
+        when (controlAction(id)) {
             ROUNDED_MESSAGE -> {
                 val number = primaryInfoState.number().orEmpty()
                 if (number.isNotBlank()) runCatching {
@@ -467,9 +530,18 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     }
     override fun setPrimary(primaryInfo: PrimaryInfo) { primaryInfoState = primaryInfo }
     override fun setSecondary(secondaryInfo: SecondaryInfo) { secondaryInfoState = secondaryInfo }
-    override fun setCallState(primaryCallState: PrimaryCallState) { this.primaryCallState = primaryCallState }
+    override fun setCallState(primaryCallState: PrimaryCallState) {
+        this.primaryCallState = primaryCallState
+        val secondaryState = primaryCallState.swapToSecondaryButtonState()
+        showButton(BUTTON_SWITCH_TO_SECONDARY, secondaryState != PrimaryCallState.ButtonState.NOT_SUPPORT)
+        enableButton(BUTTON_SWITCH_TO_SECONDARY, secondaryState == PrimaryCallState.ButtonState.ENABLED)
+    }
     override fun setEndCallButtonEnabled(enabled: Boolean, animate: Boolean) { endEnabled = enabled }
-    override fun showManageConferenceCallButton(visible: Boolean) { conference = visible }
+    override fun showManageConferenceCallButton(visible: Boolean) {
+        conference = visible
+        showButton(BUTTON_MANAGE_VOICE_CONFERENCE, visible)
+        enableButton(BUTTON_MANAGE_VOICE_CONFERENCE, visible)
+    }
     override fun isManageConferenceVisible() = conference
     override fun dispatchPopulateAccessibilityEvent(event: AccessibilityEvent) { event.text.add(primaryInfoState.name() ?: primaryInfoState.number()) }
     override fun showNoteSentToast() { Toast.makeText(context, R.string.expressive_note_sent, Toast.LENGTH_SHORT).show() }
@@ -500,16 +572,21 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
     override fun setAudioState(audioState: CallAudioState) { audio = audioState }
     override fun setCallRecordingState(isRecording: Boolean) { recording = isRecording }
     override fun setCallRecordingDuration(durationMs: Long) { recordingDuration = durationMs }
-    override fun requestCallRecordingPermissions(permissions: Array<String>) { recordPermission.launch(permissions) }
+    override fun requestCallRecordingPermissions(permissions: Array<String>) {
+        if (isControlEnabled(BUTTON_RECORD_CALL)) recordPermission.launch(permissions)
+    }
     override fun updateButtonStates() {}
     override fun showAudioRouteSelector() {
+        if (!isControlEnabled(BUTTON_AUDIO)) return
         if (requireContext().checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != android.content.pm.PackageManager.PERMISSION_GRANTED)
             bluetoothPermission.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT))
         else openAudioRoutes()
     }
     private fun openAudioRoutes() {
-        showAudioRoutes = true
+        if (isControlEnabled(BUTTON_AUDIO)) showAudioRoutes = true
     }
-    override fun onAudioRouteSelected(audioRoute: Int) { buttonDelegate.setAudioRoute(audioRoute) }
+    override fun onAudioRouteSelected(audioRoute: Int) {
+        if (isControlEnabled(BUTTON_AUDIO)) buttonDelegate.setAudioRoute(audioRoute)
+    }
     override fun onAudioRouteSelectorDismiss() {}
 }

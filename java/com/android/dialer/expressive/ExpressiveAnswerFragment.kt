@@ -32,6 +32,9 @@ import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import com.android.dialer.R
 import com.android.incallui.answer.protocol.*
+import com.android.incallui.call.CallList
+import com.android.incallui.call.state.DialerCallState
+import com.android.incallui.incall.protocol.PrimaryCallState
 
 class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     override val answering = true
@@ -39,6 +42,7 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     private var responses by mutableStateOf<List<String>>(emptyList())
     private var showResponses by mutableStateOf(false)
     private var takingAction by mutableStateOf(false)
+    private var answerScreenReady by mutableStateOf(false)
     private var incomingCallStyle by mutableStateOf(INCOMING_CALL_STYLE_DEFAULT)
     private lateinit var preferences: SharedPreferences
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
@@ -55,9 +59,13 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         answerDelegate = (requireActivity() as AnswerScreenDelegateFactory).newAnswerScreenDelegate(this)
         super.onViewCreated(view, savedInstanceState)
+        answerScreenReady = true
         if (allowAnswerAndRelease()) answerDelegate.onAnswerAndReleaseButtonEnabled()
     }
     override fun onDestroyView() {
+        answerScreenReady = false
+        showResponses = false
+        responses = emptyList()
         if (allowAnswerAndRelease()) answerDelegate.onAnswerAndReleaseButtonDisabled()
         answerDelegate.onAnswerScreenUnready()
         super.onDestroyView()
@@ -66,25 +74,46 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
         preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
         super.onDestroy()
     }
+    private fun hasIncomingCall(): Boolean {
+        if (!isIncomingState(primaryCallState.state())) return false
+        val call = CallList.getInstance().getCallById(getCallId()) ?: return false
+        return isIncomingState(call.state)
+    }
+    private fun canTakeAction() = answerScreenReady && !takingAction && !showResponses && hasIncomingCall()
     private fun answerCall() {
-        if (takingAction || showResponses) return
+        if (!canTakeAction()) return
         takingAction = true
         answerDelegate.onAnswer(false)
     }
     private fun rejectCall() {
-        if (takingAction || showResponses) return
+        if (!canTakeAction()) return
         takingAction = true
         answerDelegate.onReject()
+    }
+    private fun answerAndReleaseCall() {
+        if (!canTakeAction() || !allowAnswerAndRelease()) return
+        takingAction = true
+        answerDelegate.onAnswerAndReleaseCall()
+    }
+    private fun openResponses() {
+        if (!canTakeAction() || responses.isEmpty()) return
+        showResponses = true
+    }
+    private fun rejectWithResponse(response: String) {
+        if (!answerScreenReady || takingAction || !showResponses || response !in responses || !hasIncomingCall()) return
+        showResponses = false
+        takingAction = true
+        answerDelegate.onRejectCallWithMessage(response)
     }
     @Composable
     override fun CallGestureContainer(content: @Composable () -> Unit) {
         if (incomingCallStyle == INCOMING_CALL_STYLE_IOS) {
             content()
         } else if (incomingCallStyle == INCOMING_CALL_STYLE_GOOGLE) {
-            IncomingCallGoogleSwipe(enabled = !takingAction && !showResponses,
+            IncomingCallGoogleSwipe(enabled = canTakeAction(),
                 onAnswer = ::answerCall, onReject = ::rejectCall, content = content)
         } else {
-            IncomingCallSwipe(enabled = !takingAction && !showResponses,
+            IncomingCallSwipe(enabled = canTakeAction(),
                 onAnswer = ::answerCall, onReject = ::rejectCall, content = content)
         }
     }
@@ -93,14 +122,14 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
         LaunchedEffect(takingAction) {
             if (takingAction) { kotlinx.coroutines.delay(5000); takingAction = false }
         }
-        val actionsEnabled = !takingAction && !showResponses
+        val actionsEnabled = canTakeAction()
         if (incomingCallStyle == INCOMING_CALL_STYLE_DEFAULT) IncomingCallHandle(enabled = actionsEnabled)
         if (incomingCallStyle == INCOMING_CALL_STYLE_GOOGLE) IncomingCallGoogleHandle(enabled = actionsEnabled)
         if (primaryInfoState.answeringDisconnectsOngoingCall()) Text(stringResource(R.string.expressive_answer_ends_call), Modifier.padding(12.dp))
-        if (allowAnswerAndRelease()) TextButton(onClick = { takingAction = true; answerDelegate.onAnswerAndReleaseCall() }, enabled = !takingAction) {
+        if (allowAnswerAndRelease()) TextButton(onClick = ::answerAndReleaseCall, enabled = actionsEnabled) {
             Text(stringResource(R.string.expressive_answer_release))
         }
-        if (responses.isNotEmpty()) FilledTonalButton(onClick = { showResponses = true }, enabled = !takingAction,
+        FilledTonalButton(onClick = ::openResponses, enabled = actionsEnabled && responses.isNotEmpty(),
             modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp), shape = CircleShape,
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -119,7 +148,7 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
             .semantics { liveRegion = LiveRegionMode.Polite })
         if (showResponses) ModalBottomSheet(onDismissRequest = { showResponses = false }) {
             responses.forEach { response ->
-                TextButton(onClick = { showResponses = false; takingAction = true; answerDelegate.onRejectCallWithMessage(response) },
+                TextButton(onClick = { rejectWithResponse(response) }, enabled = answerScreenReady && !takingAction && hasIncomingCall(),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) { Text(response) }
             }
             Spacer(Modifier.height(24.dp))
@@ -131,7 +160,14 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
     override fun isVideoUpgradeRequest() = false
     override fun allowAnswerAndRelease() = requireArguments().getBoolean("release")
     override fun isActionTimeout() = ::answerDelegate.isInitialized && answerDelegate.isActionTimeout
-    override fun setTextResponses(textResponses: List<String>) { responses = textResponses }
+    override fun setTextResponses(textResponses: List<String>) {
+        responses = textResponses.toList()
+        if (responses.isEmpty()) showResponses = false
+    }
+    override fun setCallState(primaryCallState: PrimaryCallState) {
+        super.setCallState(primaryCallState)
+        if (!hasIncomingCall()) showResponses = false
+    }
     override fun hasPendingDialogs() = showResponses
     override fun dismissPendingDialogs() { showResponses = false }
     override fun getAnswerScreenFragment(): Fragment = this
@@ -141,6 +177,7 @@ class ExpressiveAnswerFragment : ExpressiveCallFragment(), AnswerScreen {
         private const val INCOMING_CALL_STYLE_DEFAULT = "default"
         private const val INCOMING_CALL_STYLE_IOS = "ios"
         private const val INCOMING_CALL_STYLE_GOOGLE = "google"
+        private fun isIncomingState(state: Int) = state == DialerCallState.INCOMING || state == DialerCallState.CALL_WAITING
         private fun readIncomingCallStyle(prefs: SharedPreferences): String {
             return prefs.getString(INCOMING_CALL_STYLE, null)
                 ?: if (prefs.getBoolean(SEPARATE_CALL_BUTTONS, false)) INCOMING_CALL_STYLE_IOS
