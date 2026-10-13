@@ -18,7 +18,7 @@
     coreApp="true"
     package="com.android.dialer"
     android:versionCode="2900000"
-    android:versionName="1.3 beta">
+    android:versionName="1.5 beta">
 
     <uses-feature
         android:name="android.hardware.telephony"
