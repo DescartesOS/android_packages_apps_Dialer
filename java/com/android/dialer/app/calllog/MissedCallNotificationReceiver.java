@@ -75,6 +75,8 @@ public class MissedCallNotificationReceiver extends BroadcastReceiver {
               pendingResult.finish();
             })
         .build()
-        .executeParallel(new Pair<>(count, phoneNumber));
+        // Keep refreshes ordered with bulk notification cancellation, which uses the same serial
+        // executor. Otherwise a stale call-log snapshot can be published after cancellation.
+        .executeSerial(new Pair<>(count, phoneNumber));
   }
 }

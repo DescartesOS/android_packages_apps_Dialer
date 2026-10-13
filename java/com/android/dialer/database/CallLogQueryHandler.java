@@ -292,10 +292,11 @@ public class CallLogQueryHandler extends NoNullCursorAsyncQueryHandler {
 
   /** @return Query string to get all unread missed calls. */
   private String getUnreadMissedCallsQuery() {
-    return Calls.IS_READ
+    return "("
+        + Calls.IS_READ
         + " = 0 OR "
         + Calls.IS_READ
-        + " IS NULL"
+        + " IS NULL)"
         + " AND "
         + Calls.TYPE
         + " = "
