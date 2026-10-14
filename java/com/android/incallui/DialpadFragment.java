@@ -193,11 +193,10 @@ public class DialpadFragment extends BaseFragment<DialpadPresenter, DialpadUi>
   /** Starts the slide up animation for the Dialpad keys when the Dialpad is revealed. */
   public void onExpressiveDigit(char digit, boolean pressed) {
     if (pressed) {
-      appendDigitsToField(digit);
+      getPresenter().processDtmf(digit);
       if (SpecialCharSequenceMgr.handleChars(getActivity(), getDtmfText(), dtmfDialerField)) {
         dtmfDialerField.getText().clear();
       }
-      getPresenter().processDtmf(digit);
     } else {
       getPresenter().stopDtmf();
     }
