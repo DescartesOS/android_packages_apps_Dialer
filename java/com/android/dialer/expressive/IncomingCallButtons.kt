@@ -94,7 +94,8 @@ private fun IncomingCallButton(
             contentPadding = PaddingValues(0.dp),
             interactionSource = interaction
         ) {
-            Symbol(symbol, description = label, modifier = Modifier.size(34.dp))
+            Symbol(symbol, description = label,
+                modifier = Modifier.size(34.dp).incomingCallShake(enabled && symbol == DialerSymbol.Phone))
         }
         Text(label, Modifier.padding(top = 12.dp).clearAndSetSemantics {},
             style = MaterialTheme.typography.bodyLarge,

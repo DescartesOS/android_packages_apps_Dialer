@@ -121,7 +121,7 @@ internal fun IncomingCallHandle(enabled: Boolean) {
         }, shape = CircleShape, color = background, contentColor = foreground) {
             Box(contentAlignment = Alignment.Center) {
                 Symbol(if (feedbackVisible && !answering) DialerSymbol.EndCall else DialerSymbol.Phone,
-                    modifier = Modifier.size(32.dp))
+                    modifier = Modifier.size(32.dp).incomingCallShake(enabled && !feedbackVisible))
             }
         }
         if (feedbackVisible) Text(stringResource(when {

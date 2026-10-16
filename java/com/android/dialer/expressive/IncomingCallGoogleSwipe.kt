@@ -135,7 +135,7 @@ internal fun IncomingCallGoogleHandle(enabled: Boolean) {
             shadowElevation = 2.dp) {
             Box(contentAlignment = Alignment.Center) {
                 Symbol(icon, description = if (draggingLeft) leftLabel else rightLabel,
-                    modifier = Modifier.size(30.dp))
+                    modifier = Modifier.size(30.dp).incomingCallShake(enabled && !feedbackVisible))
             }
         }
     }
