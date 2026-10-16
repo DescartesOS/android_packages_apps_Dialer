@@ -29,6 +29,7 @@ import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.common.concurrent.DialerExecutorComponent;
 import com.android.dialer.common.concurrent.ThreadUtil;
+import com.android.dialer.expressive.QuickResponseStore;
 import com.android.incallui.answer.protocol.AnswerScreen;
 import com.android.incallui.answer.protocol.AnswerScreenDelegate;
 import com.android.incallui.answerproximitysensor.AnswerProximitySensor;
@@ -42,7 +43,9 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /** Manages changes for an incoming call screen. */
@@ -54,6 +57,7 @@ public class AnswerScreenPresenter
   private final Context context;
   @NonNull private final AnswerScreen answerScreen;
   @NonNull private final DialerCall call;
+  @NonNull private final QuickResponseStore quickResponseStore;
   private long actionPerformedTimeMillis;
 
   AnswerScreenPresenter(
@@ -62,6 +66,7 @@ public class AnswerScreenPresenter
     this.context = Assert.isNotNull(context);
     this.answerScreen = Assert.isNotNull(answerScreen);
     this.call = Assert.isNotNull(call);
+    this.quickResponseStore = new QuickResponseStore(context);
     if (isSmsResponseAllowed(call)) {
       answerScreen.setTextResponses(getCannedSmsResponses(call));
     }
@@ -188,7 +193,17 @@ public class AnswerScreenPresenter
 
   private List<String> getCannedSmsResponses(DialerCall call) {
     List<String> responses = call.getCannedSmsResponses();
-    return responses == null ? Collections.emptyList() : responses;
+    List<String> customResponses = quickResponseStore.load();
+    if (customResponses.isEmpty()) {
+      return responses == null ? Collections.emptyList() : responses;
+    }
+
+    LinkedHashSet<String> mergedResponses = new LinkedHashSet<>();
+    if (responses != null) {
+      mergedResponses.addAll(responses);
+    }
+    mergedResponses.addAll(customResponses);
+    return new ArrayList<>(mergedResponses);
   }
 
   @Override

@@ -31,6 +31,16 @@
     </string-array>
     <string name="expressive_settings_sound_summary">Ringtone, vibration, dialpad tones and call audio</string>
     <string name="expressive_settings_responses_summary">Edit the messages you can send when declining a call</string>
+    <string name="expressive_quick_responses_body">Choose a ready-made reply when you need to decline a call quickly.</string>
+    <string name="expressive_system_responses_title">Android responses</string>
+    <string name="expressive_system_responses_body">These responses are provided by Android Telecom and are available on supported incoming calls.</string>
+    <string name="expressive_edit_system_responses">Edit Android responses</string>
+    <string name="expressive_custom_responses_title">Your custom messages</string>
+    <string name="expressive_custom_responses_empty">Add a message you use often. It will appear with your Android responses when you decline a call.</string>
+    <string name="expressive_add_custom_response">Add</string>
+    <string name="expressive_add_custom_response_title">Add custom message</string>
+    <string name="expressive_custom_response_hint">Message</string>
+    <string name="expressive_custom_response_duplicate">That message is already saved.</string>
     <string name="expressive_settings_lookup_summary">Find nearby places and identify unknown callers</string>
     <string name="expressive_settings_calls_summary">Manage carrier calling features and preferences</string>
     <string name="expressive_settings_accounts_summary">Choose calling accounts and configure your SIMs</string>

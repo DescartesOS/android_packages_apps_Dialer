@@ -326,6 +326,11 @@
             android:name="com.android.dialer.expressive.ExpressiveSettingsActivity"
             android:exported="false"
             android:theme="@style/Dialer.ThemeBase.NoActionBar" />
+        <activity
+            android:name="com.android.dialer.expressive.QuickResponsesActivity"
+            android:exported="false"
+            android:label="@string/respond_via_sms_setting_title"
+            android:theme="@style/Dialer.ThemeBase.NoActionBar" />
         <!-- The entrance point for Phone UI.
              stateAlwaysHidden is set to suppress keyboard show up on dialpad screen. -->
         <activity

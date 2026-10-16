@@ -42,6 +42,7 @@ import com.android.dialer.R;
 import com.android.dialer.app.BaseActivity;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.compat.telephony.TelephonyManagerCompat;
+import com.android.dialer.expressive.QuickResponsesActivity;
 import com.android.dialer.lookup.LookupSettingsFragment;
 import com.android.dialer.util.PermissionsUtil;
 import com.android.dialer.voicemail.settings.VoicemailSettingsFragment;
@@ -105,7 +106,7 @@ public class DialerSettingsActivity extends BaseActivity implements
 
       Preference quickResponseSettings = new Preference(getContext());
       Intent quickResponseSettingsIntent =
-              new Intent(TelecomManager.ACTION_SHOW_RESPOND_VIA_SMS_SETTINGS);
+              new Intent(requireContext(), QuickResponsesActivity.class);
       quickResponseSettings.setTitle(R.string.respond_via_sms_setting_title);
       quickResponseSettings.setSummary(R.string.expressive_settings_responses_summary);
       quickResponseSettings.setIntent(quickResponseSettingsIntent);
