@@ -14,6 +14,8 @@
  * limitations under the License
  */
 
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.android.dialer.expressive
 
 import androidx.annotation.DrawableRes
@@ -36,7 +38,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.*
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.android.dialer.R
 import kotlinx.coroutines.delay
@@ -94,6 +95,25 @@ fun Symbol(symbol: DialerSymbol, description: String? = null, modifier: Modifier
     Icon(painterResource(symbol.drawableRes), description, modifier)
 }
 
+/** Connected surfaces use generous outer corners and a small gap at their shared edges. */
+internal fun dialerGroupedShape(first: Boolean, last: Boolean) = RoundedCornerShape(
+    topStart = if (first) 28.dp else 4.dp,
+    topEnd = if (first) 28.dp else 4.dp,
+    bottomStart = if (last) 28.dp else 4.dp,
+    bottomEnd = if (last) 28.dp else 4.dp
+)
+
+@Composable
+internal fun DialerEmblem(symbol: DialerSymbol, modifier: Modifier = Modifier) {
+    Surface(modifier, shape = MaterialShapes.Cookie9Sided.toShape(),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+        Box(contentAlignment = Alignment.Center) {
+            Symbol(symbol, modifier = Modifier.fillMaxSize(.44f))
+        }
+    }
+}
+
 @Composable
 fun ExpressiveTile(
     onClick: () -> Unit, modifier: Modifier = Modifier, selected: Boolean = false,
@@ -120,12 +140,14 @@ fun ExpressiveTile(
             }
         }
     }
-    val scale by animateFloatAsState(if (pressed) .94f else 1f, spring(.6f, 500f), label = "press")
-    val radius by animateDpAsState(if (pressed) 16.dp else if (selected) 22.dp else 32.dp, spring(.65f, 500f), label = "shape")
+    val scale by animateFloatAsState(if (pressed) .96f else 1f,
+        MaterialTheme.motionScheme.fastSpatialSpec(), label = "press")
+    val radius by animateDpAsState(if (pressed) 16.dp else if (selected) 22.dp else 32.dp,
+        MaterialTheme.motionScheme.fastSpatialSpec(), label = "shape")
     val background by animateColorAsState(if (pressed && highlightOnPress) MaterialTheme.colorScheme.primary else color,
-        tween(100), label = "tile color")
+        MaterialTheme.motionScheme.fastEffectsSpec(), label = "tile color")
     val foreground by animateColorAsState(if (pressed && highlightOnPress) MaterialTheme.colorScheme.onPrimary else contentColor,
-        tween(100), label = "tile content")
+        MaterialTheme.motionScheme.fastEffectsSpec(), label = "tile content")
     val haptic = LocalHapticFeedback.current
     Surface(modifier.graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else .38f },
         shape = RoundedCornerShape(radius), color = background, contentColor = foreground) {
@@ -149,20 +171,24 @@ fun FloatingDialerBar(
 ) {
     val icons = listOf(DialerSymbol.History, DialerSymbol.Star, DialerSymbol.People, DialerSymbol.Voicemail)
     val haptic = LocalHapticFeedback.current
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    Surface(shape = RoundedCornerShape(32.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shadowElevation = 0.dp, tonalElevation = 2.dp,
         modifier = Modifier.widthIn(max = if (compact) 280.dp else 440.dp)
-            .animateContentSize(spring(.85f, 500f))) {
+            .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())) {
         Row(Modifier.padding(6.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically) {
             labels.forEachIndexed { index, label ->
                 val active = selected == index
                 val interaction = remember { MutableInteractionSource() }
                 val pressed by interaction.collectIsPressedAsState()
-                val scale by animateFloatAsState(if (pressed) .88f else 1f, spring(.65f, 500f), label = "nav press")
-                val radius by animateDpAsState(if (pressed) 16.dp else 28.dp, spring(.7f, 500f), label = "nav shape")
-                val weight by animateFloatAsState(if (active) 2.2f else 1f, spring(.8f, 500f), label = "nav width")
-                val color by animateColorAsState(if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent, label = "nav color")
+                val scale by animateFloatAsState(if (pressed) .94f else 1f,
+                    MaterialTheme.motionScheme.fastSpatialSpec(), label = "nav press")
+                val radius by animateDpAsState(if (pressed) 16.dp else 26.dp,
+                    MaterialTheme.motionScheme.fastSpatialSpec(), label = "nav shape")
+                val weight by animateFloatAsState(if (active && !compact) 2.2f else 1f,
+                    MaterialTheme.motionScheme.defaultSpatialSpec(), label = "nav width")
+                val color by animateColorAsState(if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    MaterialTheme.motionScheme.fastEffectsSpec(), label = "nav color")
                 Row(Modifier.weight(weight).heightIn(min = 52.dp).graphicsLayer { scaleX = scale; scaleY = scale }
                     .clip(RoundedCornerShape(radius)).background(color)
                     .selectable(active, interactionSource = interaction, indication = LocalIndication.current,
@@ -174,11 +200,11 @@ fun FloatingDialerBar(
                         else MaterialTheme.colorScheme.onSurfaceVariant) {
                         Symbol(icons[index], modifier = Modifier.size(22.dp))
                         AnimatedVisibility(!compact && active,
-                            enter = fadeIn() + expandHorizontally(spring(.8f, 500f)),
+                            enter = fadeIn() + expandHorizontally(MaterialTheme.motionScheme.defaultSpatialSpec()),
                             exit = fadeOut() + shrinkHorizontally()) {
                             Text(label, Modifier.padding(start = 6.dp).clearAndSetSemantics {}, maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.labelLargeEmphasized)
                         }
                     }
                 }
@@ -202,14 +228,20 @@ fun ExpressiveLoading(label: String) {
 @Composable
 fun ContactAvatar(name: String, modifier: Modifier = Modifier, large: Boolean = false, number: String = "") {
     val photo = rememberCallerPhoto(number, if (large) 256 else 128)
+    val colors = MaterialTheme.colorScheme
+    val (container, foreground) = when ((name.hashCode() and Int.MAX_VALUE) % 3) {
+        0 -> colors.primaryContainer to colors.onPrimaryContainer
+        1 -> colors.secondaryContainer to colors.onSecondaryContainer
+        else -> colors.tertiaryContainer to colors.onTertiaryContainer
+    }
     Surface(modifier.size(if (large) 112.dp else 48.dp),
         shape = RoundedCornerShape(if (large) 40.dp else 18.dp),
-        color = MaterialTheme.colorScheme.tertiaryContainer,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+        color = container, contentColor = foreground) {
         Box(contentAlignment = Alignment.Center) {
             if (photo != null) Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Text(name.trim().firstOrNull()?.uppercase() ?: "?",
-                style = if (large) MaterialTheme.typography.displaySmall else MaterialTheme.typography.titleLarge)
+                style = if (large) MaterialTheme.typography.displaySmallEmphasized
+                    else MaterialTheme.typography.titleLargeEmphasized)
         }
     }
 }

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package com.android.dialer.expressive
 
@@ -53,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.android.dialer.R
@@ -85,7 +85,8 @@ private fun QuickResponsesScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.respond_via_sms_setting_title)) },
+                title = { Text(stringResource(R.string.respond_via_sms_setting_title),
+                    style = MaterialTheme.typography.titleLargeEmphasized) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Symbol(DialerSymbol.Back, stringResource(R.string.expressive_back))
@@ -122,8 +123,7 @@ private fun QuickResponsesScreen(onBack: () -> Unit) {
                     ) {
                         Text(
                             text = stringResource(R.string.expressive_system_responses_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleLargeEmphasized,
                         )
                         Text(
                             text = stringResource(R.string.expressive_system_responses_body),
@@ -157,8 +157,7 @@ private fun QuickResponsesScreen(onBack: () -> Unit) {
                     Text(
                         text = stringResource(R.string.expressive_custom_responses_title),
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLargeEmphasized,
                     )
                     FilledTonalButton(
                         onClick = { showAddDialog = true },

@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.os.Bundle
@@ -26,7 +27,6 @@ import android.view.*
 import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -40,7 +40,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalView
@@ -152,10 +151,9 @@ private fun PreferenceRow(
     checked: Boolean?, symbol: DialerSymbol, icon: Drawable?, first: Boolean, last: Boolean, onClick: () -> Unit
 ) {
     val view = LocalView.current
-    Surface(modifier = Modifier.padding(bottom = if (last) 0.dp else 1.dp)
-        .animateContentSize(spring(.9f, 450f)), shape = RoundedCornerShape(
-        topStart = if (first) 28.dp else 0.dp, topEnd = if (first) 28.dp else 0.dp,
-        bottomStart = if (last) 28.dp else 0.dp, bottomEnd = if (last) 28.dp else 0.dp),
+    Surface(modifier = Modifier.padding(bottom = if (last) 0.dp else 2.dp)
+        .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec()),
+        shape = dialerGroupedShape(first, last),
         color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
             Row(Modifier.fillMaxWidth().semantics {
@@ -176,7 +174,7 @@ private fun PreferenceRow(
                     }
                 }
                 Column(Modifier.weight(1f)) {
-                    if (title.isNotBlank()) Text(title, style = MaterialTheme.typography.titleMedium,
+                    if (title.isNotBlank()) Text(title, style = MaterialTheme.typography.titleMediumEmphasized,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f))
                     if (summary.isNotBlank()) {
                         Text(summary, Modifier.padding(top = if (title.isNotBlank()) 4.dp else 0.dp),
@@ -264,8 +262,8 @@ private fun PreferenceDialog(pref: Preference, dismiss: () -> Unit, changed: () 
                                 verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(selected, onClick = null)
                                 Text(pref.entries[index].toString(), Modifier.weight(1f).padding(start = 16.dp),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                                    style = if (selected) MaterialTheme.typography.bodyLargeEmphasized
+                                        else MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurface)
                             }
                         }

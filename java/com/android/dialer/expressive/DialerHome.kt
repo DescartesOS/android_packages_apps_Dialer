@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.provider.CallLog.Calls
@@ -39,7 +40,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import com.android.dialer.R
@@ -88,15 +88,16 @@ fun DialerHome(
                 FloatingDialerBar(tab, labels, onTab, compactFloatingBar)
             }
         }, floatingActionButton = {
-            ExpressiveTile(onClick = { onKeypad(true) }, color = MaterialTheme.colorScheme.primary,
+            ExpressiveTile(onClick = { onKeypad(true) }, modifier = Modifier.size(64.dp),
+                color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary) {
-                Symbol(DialerSymbol.Keypad, stringResource(R.string.expressive_keypad))
+                Symbol(DialerSymbol.Keypad, stringResource(R.string.expressive_keypad), Modifier.size(28.dp))
             }
         }) { padding ->
         val direction = LocalLayoutDirection.current
         val contentInsets = PaddingValues(start = padding.calculateStartPadding(direction),
             top = padding.calculateTopPadding(), end = padding.calculateEndPadding(direction))
-    val bottomClearance = padding.calculateBottomPadding()
+        val bottomClearance = padding.calculateBottomPadding()
         val keyboard = LocalSoftwareKeyboardController.current
         val keyboardScrollConnection = remember(hideKeyboardOnScroll, keyboard) {
             if (!hideKeyboardOnScroll) null else object : NestedScrollConnection {
@@ -113,15 +114,18 @@ fun DialerHome(
                 verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.expressive_phone), style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     AnimatedContent(labels[tab], label = "page title") {
-                        Text(it, style = MaterialTheme.typography.displaySmall)
+                        Text(it, Modifier.semantics { heading() },
+                            style = MaterialTheme.typography.displaySmallEmphasized,
+                            color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 FilledTonalIconButton(onClick = onSettings) { Symbol(DialerSymbol.Settings, stringResource(R.string.expressive_settings)) }
             }
             if (tab != 3) {
-                TextField(query, onQuery, Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                TextField(query, onQuery, Modifier.fillMaxWidth().padding(horizontal = 20.dp).heightIn(min = 60.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge,
                     placeholder = { Text(stringResource(R.string.expressive_search)) },
                     leadingIcon = { Symbol(DialerSymbol.Search) },
                     trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onQuery("") }) {
@@ -166,13 +170,16 @@ fun DialerHome(
                                 EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_no_calls),
                                     stringResource(if (query.isBlank()) R.string.expressive_no_calls_body else R.string.expressive_no_results))
                             }
-                            var previousDay = ""
-                            groups.forEach { group ->
+                            val now = System.currentTimeMillis()
+                            val days = groups.map { group ->
+                                DateUtils.getRelativeTimeSpanString(group.latest.date, now, DateUtils.DAY_IN_MILLIS).toString()
+                            }
+                            groups.forEachIndexed { index, group ->
                                 val call = group.latest
-                                val day = DateUtils.getRelativeTimeSpanString(call.date, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS).toString()
-                                if (day != previousDay) {
-                                    item(key = "day_${call.id}") { SectionLabel(day) }
-                                    previousDay = day
+                                val first = index == 0 || days[index - 1] != days[index]
+                                val last = index == groups.lastIndex || days[index + 1] != days[index]
+                                if (first) {
+                                    item(key = "day_${call.id}") { SectionLabel(days[index]) }
                                 }
                                 item(key = group.id) {
                                     RecentCallCard(group, expanded = expandedGroup == group.id,
@@ -181,6 +188,7 @@ fun DialerHome(
                                         onRecordings = { showRecordings(call.name.ifBlank { call.number }, call.number) },
                                         onCall = { onCall(call.number) }, onRequestDelete = { delete = group },
                                         onDelete = { completed -> onDelete(group.calls, completed) },
+                                        shape = dialerGroupedShape(first, last),
                                         modifier = Modifier.animateItem(placementSpec = null))
                                 }
                             }
@@ -211,8 +219,8 @@ fun DialerHome(
                                                     onClick = { person = contact }, onLongClick = { person = contact }).padding(16.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally,
                                                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                                    ContactAvatar(contact.name, number = contact.number)
-                                                    Text(contact.name, style = MaterialTheme.typography.titleMedium,
+                                                    ContactAvatar(contact.name, Modifier.size(64.dp), number = contact.number)
+                                                    Text(contact.name, style = MaterialTheme.typography.titleMediumEmphasized,
                                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                                                     FilledTonalIconButton(onClick = { onCall(contact.number) }) {
@@ -227,15 +235,17 @@ fun DialerHome(
                             } else if (page == 2 && groupContactsByName) {
                                 itemsIndexed(contactNameGroups, key = { index, group ->
                                     if (group.name.isNotBlank()) "contact_name:${group.name}" else "unnamed_contact:$index"
-                                }) { _, group ->
-                                    Surface(modifier = Modifier.animateItem(), shape = RoundedCornerShape(24.dp),
+                                }) { index, group ->
+                                    Surface(modifier = Modifier.animateItem(),
+                                        shape = dialerGroupedShape(index == 0, index == contactNameGroups.lastIndex),
                                         color = MaterialTheme.colorScheme.surfaceContainerLow) {
                                         Column(Modifier.fillMaxWidth()) {
                                             Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 4.dp),
                                                 verticalAlignment = Alignment.CenterVertically) {
                                                 ContactAvatar(group.name, number = group.people.first().number)
                                                 Text(group.name, Modifier.weight(1f).padding(horizontal = 12.dp),
-                                                    fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                    style = MaterialTheme.typography.titleMediumEmphasized,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                                             }
                                             group.people.forEach { contact ->
                                                 Row(Modifier.fillMaxWidth().combinedClickable(onClick = { person = contact },
@@ -253,14 +263,16 @@ fun DialerHome(
                                         }
                                     }
                                 }
-                            } else items(contacts, key = { "${it.id}:${it.number}" }) { contact ->
-                                Surface(modifier = Modifier.animateItem(), shape = RoundedCornerShape(24.dp),
+                            } else itemsIndexed(contacts, key = { _, contact -> "${contact.id}:${contact.number}" }) { index, contact ->
+                                Surface(modifier = Modifier.animateItem(),
+                                    shape = dialerGroupedShape(index == 0, index == contacts.lastIndex),
                                     color = MaterialTheme.colorScheme.surfaceContainerLow) {
                                     Row(Modifier.fillMaxWidth().combinedClickable(onClick = { person = contact },
                                         onLongClick = { person = contact }).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                                         ContactAvatar(contact.name, number = contact.number)
                                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                                            Text(contact.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(contact.name, style = MaterialTheme.typography.titleMediumEmphasized,
+                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
                                             Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         IconButton(onClick = { onCall(contact.number) }) {
@@ -344,16 +356,16 @@ internal fun RecentCall.typeLabel(): String = stringResource(when (type) {
     else -> R.string.expressive_incoming
 })
 @Composable
-fun SectionLabel(text: String) = Text(text, Modifier.padding(start = 8.dp, top = 18.dp, bottom = 8.dp),
-    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+fun SectionLabel(text: String) = Text(text,
+    Modifier.padding(start = 8.dp, top = 20.dp, bottom = 8.dp).semantics { heading() },
+    style = MaterialTheme.typography.titleSmallEmphasized, color = MaterialTheme.colorScheme.primary)
 @Composable
 fun EmptyDialerState(icon: DialerSymbol, title: String, body: String, action: String? = null, onClick: () -> Unit = {}) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
-            Symbol(icon, modifier = Modifier.padding(24.dp).size(36.dp))
-        }
-        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        DialerEmblem(icon, Modifier.size(88.dp))
+        Text(title, style = MaterialTheme.typography.titleLargeEmphasized,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         if (action != null) FilledTonalButton(onClick) { Text(action) }
@@ -364,15 +376,17 @@ fun DetailHeader(name: String, number: String) {
     Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ContactAvatar(name, large = true, number = number)
-        Text(name, style = MaterialTheme.typography.headlineLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        if (number.isNotBlank() && number != name) Text(number, style = MaterialTheme.typography.titleMedium)
+        Text(name, style = MaterialTheme.typography.headlineLargeEmphasized, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (number.isNotBlank() && number != name) Text(number, style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 @Composable
 fun DetailAction(icon: DialerSymbol, title: String, modifier: Modifier, selected: Boolean = false, onClick: () -> Unit) {
     ExpressiveTile(onClick, modifier, selected) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Symbol(icon); Text(title, style = MaterialTheme.typography.labelMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Symbol(icon); Text(title, style = if (selected) MaterialTheme.typography.labelMediumEmphasized
+                else MaterialTheme.typography.labelMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
@@ -390,7 +404,7 @@ fun DialerKeypad(onDigit: (String) -> Unit, onLongDigit: (String) -> Unit = onDi
                         highlightOnPress = true,
                         modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(digit, style = MaterialTheme.typography.headlineMedium)
+                            Text(digit, style = MaterialTheme.typography.headlineLargeEmphasized)
                             Text(letters.ifBlank { " " }, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
                         }
                     }

@@ -14,7 +14,9 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+    androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.android.dialer.expressive
 
 import androidx.compose.foundation.layout.*
@@ -105,7 +107,7 @@ private fun DialpadNumberField(input: TextFieldValue, onInput: (TextFieldValue) 
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             InterceptPlatformTextInput(interceptor = { _, _ -> awaitCancellation() }) {
                 TextField(input, onInput, Modifier.weight(1f),
-                    textStyle = MaterialTheme.typography.headlineLarge.copy(textAlign = TextAlign.Center),
+                    textStyle = MaterialTheme.typography.headlineLargeEmphasized.copy(textAlign = TextAlign.Center, textDirection = TextDirection.Ltr),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, showKeyboardOnFocus = false),
                     placeholder = { Text(stringResource(R.string.expressive_enter_number),
@@ -137,7 +139,7 @@ private fun DialpadCallButton(digits: String, onCall: (String) -> Unit, modifier
         color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
         Symbol(DialerSymbol.Phone)
         Text(stringResource(R.string.expressive_call), Modifier.padding(start = 12.dp),
-            style = MaterialTheme.typography.titleLarge)
+            style = MaterialTheme.typography.titleLargeEmphasized)
     }
 }
 
@@ -164,7 +166,7 @@ private fun DialpadSuggestions(
                         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(match.name, style = MaterialTheme.typography.titleSmall,
+                                Text(match.name, style = MaterialTheme.typography.titleSmallEmphasized,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(match.number, style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

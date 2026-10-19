@@ -27,11 +27,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.preference.PreferenceManager
 
 // Call actions keep their semantic colors in every theme.
@@ -81,11 +78,13 @@ fun DialerExpressiveTheme(content: @Composable () -> Unit) {
             medium = RoundedCornerShape(24.dp), large = RoundedCornerShape(32.dp),
             extraLarge = RoundedCornerShape(40.dp)
         ),
-        typography = Typography(
-            displaySmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 40.sp, lineHeight = 46.sp),
-            headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 40.sp),
-            titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp)
-        ),
-        content = { CompositionLocalProvider(LocalMonochromeTheme provides monochrome, content = content) }
+        typography = rememberDialerTypography(),
+        content = {
+            CompositionLocalProvider(
+                LocalMonochromeTheme provides monochrome,
+                LocalContentColor provides colors.onSurface,
+                content = content
+            )
+        }
     )
 }

@@ -14,6 +14,8 @@
  * limitations under the License
  */
 
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.android.dialer.expressive
 
 import android.text.Editable
@@ -86,7 +88,8 @@ object ComposeInCallDialpad {
                             contentColor = if (roundedControls) neutralForeground else colors.onSurface) {
                             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(digits, Modifier.weight(1f).padding(horizontal = 12.dp),
-                                    style = MaterialTheme.typography.headlineMedium, maxLines = 1,
+                                    style = if (roundedControls) MaterialTheme.typography.headlineMedium
+                                        else MaterialTheme.typography.headlineMediumEmphasized, maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 if (roundedControls) {
                                     val interaction = remember { MutableInteractionSource() }
@@ -182,7 +185,8 @@ private fun DtmfKey(fragment: DialpadFragment, digit: Char, modifier: Modifier, 
         }, shape = RoundedCornerShape(radius),
         color = background, contentColor = foreground) {
         Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
-            Text(digit.toString(), style = MaterialTheme.typography.headlineMedium)
+            Text(digit.toString(), style = if (roundedControls) MaterialTheme.typography.headlineMedium
+                else MaterialTheme.typography.headlineMediumEmphasized)
         }
     }
 }

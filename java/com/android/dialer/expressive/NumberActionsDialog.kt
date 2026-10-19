@@ -14,6 +14,8 @@
  * limitations under the License
  */
 
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.android.dialer.expressive
 
 import android.widget.Toast
@@ -73,12 +75,12 @@ internal fun NumberActionsDialog(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(name.trim().firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.displaySmall)
+                            Text(name.trim().firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.displaySmallEmphasized)
                         }
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(name, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge,
+                        Text(name, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineSmallEmphasized,
                             textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         if (name != number) Text(number, Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)

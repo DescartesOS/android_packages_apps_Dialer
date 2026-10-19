@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.Manifest
@@ -182,7 +183,7 @@ internal fun NumberCallRecordings(
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.expressive_call_recordings), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.expressive_call_recordings), style = MaterialTheme.typography.titleLargeEmphasized)
                     Text(name.ifBlank { number }, style = MaterialTheme.typography.titleMedium,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                     if (name.isNotBlank() && name != number) Text(number, style = MaterialTheme.typography.bodyMedium)

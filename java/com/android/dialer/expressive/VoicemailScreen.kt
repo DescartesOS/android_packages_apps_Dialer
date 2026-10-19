@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.content.ContentUris
@@ -109,7 +110,8 @@ fun VoicemailScreen(onCallVoicemail: () -> Unit, onSettings: () -> Unit, bottomI
         item {
             ExpressiveTile(onCallVoicemail, Modifier.fillMaxWidth(), selected = true) {
                 Symbol(DialerSymbol.Voicemail)
-                Text(stringResource(R.string.expressive_call_voicemail), Modifier.padding(start = 12.dp))
+                Text(stringResource(R.string.expressive_call_voicemail), Modifier.padding(start = 12.dp),
+                    style = MaterialTheme.typography.labelLargeEmphasized)
             }
         }
         if (messages.isEmpty() || unavailable) item {
@@ -119,9 +121,9 @@ fun VoicemailScreen(onCallVoicemail: () -> Unit, onSettings: () -> Unit, bottomI
         items(messages, key = { it.id }) { message ->
             Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(message.number.ifBlank { stringResource(R.string.expressive_unknown) }, style = MaterialTheme.typography.titleMedium)
+                    Text(message.number.ifBlank { stringResource(R.string.expressive_unknown) }, style = MaterialTheme.typography.titleMediumEmphasized)
                     Text(DateUtils.getRelativeTimeSpanString(message.date).toString() + " · " + DateUtils.formatElapsedTime(message.duration),
-                        style = MaterialTheme.typography.bodySmall)
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (message.transcript.isNotBlank()) Text(message.transcript)
                     if (preparing == message.id) ExpressiveLoading(stringResource(R.string.expressive_loading))
                     else FilledTonalButton(onClick = {

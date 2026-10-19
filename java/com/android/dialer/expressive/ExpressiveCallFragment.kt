@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.Manifest
@@ -385,8 +386,12 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
             onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
         }
         Text(name, Modifier.fillMaxWidth(),
-            style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.displaySmall,
-            fontWeight = if (hyperOs) FontWeight.Light else FontWeight.Medium, textAlign = TextAlign.Center)
+            style = when {
+                hyperOs && compact -> MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light)
+                hyperOs -> MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Light)
+                compact -> MaterialTheme.typography.headlineSmallEmphasized
+                else -> MaterialTheme.typography.displaySmallEmphasized
+            }, textAlign = TextAlign.Center)
         if (number.isNotBlank() && name != number && !(hideSavedNumber && primaryInfoState.isLocalContact()))
             Text(number, Modifier.fillMaxWidth().padding(top = 8.dp),
             style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
@@ -419,7 +424,7 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary) {
             Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(status, style = MaterialTheme.typography.labelLarge)
+                Text(status, style = MaterialTheme.typography.labelLargeEmphasized)
             }
         }
     }
@@ -475,7 +480,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                 if (dark) Color.Black else Color.White
             } else if (selected) colors.onPrimaryContainer else colors.onSurface) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Symbol(symbol); Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+                Symbol(symbol); Text(label, style = if (selected) MaterialTheme.typography.labelMediumEmphasized
+                    else MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
             }
         }
     }

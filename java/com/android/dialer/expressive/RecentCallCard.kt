@@ -14,7 +14,8 @@
  * limitations under the License
  */
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package com.android.dialer.expressive
 
 import android.provider.CallLog.Calls
@@ -36,7 +37,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.dialer.R
@@ -48,7 +49,8 @@ internal fun RecentCallCard(
     group: RecentCallGroup, expanded: Boolean, onExpand: () -> Unit,
     onActions: () -> Unit, onHistory: () -> Unit, onRecordings: () -> Unit, onCall: () -> Unit,
     onRequestDelete: () -> Unit, onDelete: ((Boolean) -> Unit) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(28.dp)
 ) {
     val call = group.latest
     val name = call.displayName()
@@ -58,7 +60,8 @@ internal fun RecentCallCard(
     val currentDelete by rememberUpdatedState(onDelete)
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val shape = RoundedCornerShape(24.dp)
+    val expandRotation by animateFloatAsState(if (expanded) 180f else 0f,
+        MaterialTheme.motionScheme.fastSpatialSpec(), label = "call details")
     val expandedLabel = stringResource(if (expanded) R.string.expressive_collapse_calls else R.string.expressive_expand_calls)
     val deleteLabel = stringResource(R.string.expressive_delete_history)
     val actionsLabel = stringResource(R.string.expressive_number_actions)
@@ -115,7 +118,8 @@ internal fun RecentCallCard(
                     verticalAlignment = Alignment.CenterVertically) {
                     ContactAvatar(name, number = if (call.callable) call.number else "")
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                        Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                        Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleMediumEmphasized,
                             color = if (call.type == Calls.MISSED_TYPE) colors.error else colors.onSurface)
                         if (call.spamStatus == CarrierCallIdentity.SPAM_CONFIRMED ||
                             call.spamStatus == CarrierCallIdentity.SPAM_SUSPECTED) {
@@ -142,7 +146,7 @@ internal fun RecentCallCard(
                         }
                     }
                     Symbol(DialerSymbol.Expand, modifier = Modifier.size(20.dp).graphicsLayer {
-                        rotationZ = if (expanded) 180f else 0f
+                        rotationZ = expandRotation
                     })
                     if (call.callable) IconButton(onClick = onCall, enabled = !deleting) {
                         Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, name))
@@ -213,7 +217,7 @@ internal fun NumberCallHistory(selected: RecentCall, calls: List<RecentCall>,
         Column(Modifier.fillMaxWidth().fillMaxHeight(.85f)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.expressive_full_history), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.expressive_full_history), style = MaterialTheme.typography.titleLargeEmphasized)
                     Text(selected.displayName(), style = MaterialTheme.typography.titleMedium)
                     if (selected.name.isNotBlank()) Text(selected.number, style = MaterialTheme.typography.bodyMedium)
                 }

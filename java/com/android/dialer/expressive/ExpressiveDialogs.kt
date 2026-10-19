@@ -14,6 +14,8 @@
  * limitations under the License
  */
 
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.android.dialer.expressive
 
 import android.app.Dialog
@@ -41,7 +43,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
@@ -88,7 +89,7 @@ object ExpressiveDialogs {
                     if (account.icon != null) Image(account.icon, null, Modifier.size(32.dp))
                     else Symbol(DialerSymbol.Phone)
                     Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(account.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(account.label, style = MaterialTheme.typography.titleMediumEmphasized)
                         if (account.number.isNotBlank()) Text(account.number, style = MaterialTheme.typography.bodyMedium)
                         if (account.hint.isNotBlank()) Text(account.hint, style = MaterialTheme.typography.bodySmall)
                     }
@@ -192,7 +193,7 @@ private fun DialogContent(title: String, icon: DialerSymbol, content: @Composabl
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
                 Symbol(icon, modifier = Modifier.padding(14.dp).size(28.dp))
             }
-            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            Text(title, style = MaterialTheme.typography.headlineSmallEmphasized)
             content()
         }
     }

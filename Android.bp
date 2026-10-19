@@ -220,8 +220,6 @@ android_app {
         "androidx.compose.runtime_runtime",
         "androidx.compose.ui_ui",
         "androidx.compose.foundation_foundation",
-        // Must expose MaterialExpressiveTheme and LoadingIndicator; stable 1.4.0 does not.
-        // See EXPRESSIVE_MIGRATION.md for the verified API set and ROM validation steps.
         "androidx.compose.material3_material3",
         "androidx.compose.animation_animation",
         "androidx.lifecycle_lifecycle-runtime-ktx",
