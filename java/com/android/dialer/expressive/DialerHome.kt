@@ -32,6 +32,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -80,6 +81,9 @@ fun DialerHome(
         data.recentGroups.filter { group ->
             group.calls.any { (!missedOnly || it.type == Calls.MISSED_TYPE) && matches(it.name, it.number, query) }
         }
+    }
+    val recentContactMatches = remember(data.people, data.contactsAllowed, query, missedOnly) {
+        if (query.isBlank() || missedOnly || !data.contactsAllowed) emptyList() else searchPeople(data.people, query)
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -140,7 +144,7 @@ fun DialerHome(
                     (fadeOut(tween(100)) + slideOutHorizontally { if (targetState > initialState) -it / 8 else it / 8 })
             }, label = "page") { page ->
                 val contacts = remember(data.people, query, page) {
-                    data.people.filter { (page != 1 || it.starred) && matches(it.name, it.number, query) }
+                    searchPeople(if (page == 1) data.people.filter { it.starred } else data.people, query)
                 }
                 val displayedContacts = if (page == 1) contacts.distinctBy { it.id } else contacts
                 val contactNameGroups = remember(contacts, page, groupContactsByName) {
@@ -166,7 +170,7 @@ fun DialerHome(
                                     FilterChip(missedOnly, { missedOnly = true }, { Text(stringResource(R.string.expressive_missed)) })
                                 }
                             }
-                            if (groups.isEmpty()) item {
+                            if (groups.isEmpty() && recentContactMatches.isEmpty()) item {
                                 EmptyDialerState(DialerSymbol.History, stringResource(R.string.expressive_no_calls),
                                     stringResource(if (query.isBlank()) R.string.expressive_no_calls_body else R.string.expressive_no_results))
                             }
@@ -190,6 +194,13 @@ fun DialerHome(
                                         onDelete = { completed -> onDelete(group.calls, completed) },
                                         shape = dialerGroupedShape(first, last),
                                         modifier = Modifier.animateItem(placementSpec = null))
+                                }
+                            }
+                            if (recentContactMatches.isNotEmpty()) {
+                                item(key = "search_contacts_label") { SectionLabel(stringResource(R.string.expressive_contacts)) }
+                                items(recentContactMatches, key = { "search_contact_${it.id}:${it.number}" }) { contact ->
+                                    ContactRow(contact, onClick = { person = contact }, onCall = { onCall(contact.number) },
+                                        modifier = Modifier.animateItem())
                                 }
                             }
                         } else {
@@ -264,22 +275,9 @@ fun DialerHome(
                                     }
                                 }
                             } else itemsIndexed(contacts, key = { _, contact -> "${contact.id}:${contact.number}" }) { index, contact ->
-                                Surface(modifier = Modifier.animateItem(),
+                                ContactRow(contact, onClick = { person = contact }, onCall = { onCall(contact.number) },
                                     shape = dialerGroupedShape(index == 0, index == contacts.lastIndex),
-                                    color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                                    Row(Modifier.fillMaxWidth().combinedClickable(onClick = { person = contact },
-                                        onLongClick = { person = contact }).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        ContactAvatar(contact.name, number = contact.number)
-                                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                                            Text(contact.name, style = MaterialTheme.typography.titleMediumEmphasized,
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        IconButton(onClick = { onCall(contact.number) }) {
-                                            Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, contact.name))
-                                        }
-                                    }
-                                }
+                                    modifier = Modifier.animateItem())
                             }
                         }
                     }
@@ -332,12 +330,25 @@ fun DialerHome(
         dismissButton = { TextButton(onClick = { delete = null }) { Text(stringResource(R.string.expressive_cancel)) } }) }
 }
 
-internal fun matches(name: String, number: String, query: String): Boolean {
-    if (query.isBlank()) return true
-    if (name.contains(query, ignoreCase = true) || number.contains(query)) return true
-    val normalized = PhoneNumberUtils.normalizeNumber(query)
-    return normalized.isNotEmpty() && (PhoneNumberUtils.normalizeNumber(number).contains(normalized) ||
-        PhoneNumberUtils.convertKeypadLettersToDigits(name).filter(Char::isDigit).contains(normalized))
+@Composable
+private fun ContactRow(
+    contact: Person, onClick: () -> Unit, onCall: () -> Unit,
+    shape: Shape = RoundedCornerShape(24.dp), modifier: Modifier = Modifier
+) {
+    Surface(modifier = modifier, shape = shape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Row(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onClick).padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            ContactAvatar(contact.name, number = contact.number)
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(contact.name, style = MaterialTheme.typography.titleMediumEmphasized,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onCall) {
+                Symbol(DialerSymbol.Phone, stringResource(R.string.expressive_call_person, contact.name))
+            }
+        }
+    }
 }
 
 @Composable
