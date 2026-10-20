@@ -75,6 +75,7 @@
     <string name="expressive_phone">Phone</string>
     <string name="expressive_recents">Recents</string>
     <string name="expressive_favorites">Favorites</string>
+    <string name="expressive_speed_dial">Speed dial</string>
     <string name="expressive_contacts">Contacts</string>
     <string name="expressive_voicemail">Voicemail</string>
     <string name="expressive_settings">Settings</string>
@@ -207,4 +208,17 @@
     <string name="expressive_choose_audio">Call audio</string>
     <string name="expressive_photo_hint">Touch and hold a person or number to set their caller photo.</string>
     <string name="expressive_photo_failed">Couldn’t save that photo. Try another image.</string>
+    <string name="expressive_speed_dial_hint">A shorter way to call</string>
+    <string name="expressive_speed_dial_hint_summary">Save a person or number to a key from 2–9, then hold that key on the keypad to call.</string>
+    <string name="expressive_speed_dial_shortcuts">Keypad shortcuts</string>
+    <string name="expressive_speed_dial_unassigned">Make it a shortcut</string>
+    <string name="expressive_speed_dial_assign_summary">Choose a person or save a number.</string>
+    <string name="expressive_speed_dial_assign">Set up</string>
+    <string name="expressive_speed_dial_change">Change shortcut</string>
+    <string name="expressive_speed_dial_remove">Clear shortcut</string>
+    <string name="expressive_speed_dial_assign_title">Set up shortcut %1$d</string>
+    <string name="expressive_speed_dial_contact_or_number">Find a person or enter a number</string>
+    <string name="expressive_speed_dial_contacts_unavailable">Contacts are unavailable. Enter a number to save a shortcut.</string>
+    <string name="expressive_speed_dial_use_number">Save number</string>
+    <string name="expressive_speed_dial_unassigned_key">Shortcut %1$d is not set up yet. Set it up in Speed dial.</string>
 </resources>
