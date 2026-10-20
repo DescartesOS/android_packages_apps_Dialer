@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.android.dialer.R
 import kotlinx.coroutines.awaitCancellation
 
+private val DialpadSuggestionsHeight = 176.dp
+
 @Composable
 internal fun DialpadSheet(
     people: List<Person>, speedDial: Map<Int, SpeedDialEntry>, digits: String, bottomBackspace: Boolean,
@@ -81,7 +83,12 @@ internal fun DialpadSheet(
             Column(Modifier.fillMaxWidth().imePadding().padding(horizontal = 24.dp)) {
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DialpadSuggestions(numberMatches, digits, onCall, onAddContact, grouped = true)
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(DialpadSuggestionsHeight),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        DialpadSuggestions(numberMatches, digits, onCall, onAddContact, grouped = true)
+                    }
                     DialpadNumberField(input, ::updateInput, inlineBackspace = false)
                     keypad()
                 }
