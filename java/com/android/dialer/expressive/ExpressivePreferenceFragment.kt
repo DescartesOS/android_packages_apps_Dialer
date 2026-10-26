@@ -199,6 +199,7 @@ private fun preferenceSymbol(pref: Preference): DialerSymbol {
         route == "DisplayOptionsSettingsFragment" || key.contains("photo") -> DialerSymbol.Photo
         route == "SoundSettingsFragment" -> DialerSymbol.Speaker
         route == "CallHistoryBackupFragment" -> DialerSymbol.History
+        key == "call_statistics" -> DialerSymbol.History
         route == "LookupSettingsFragment" || key.contains("lookup") -> DialerSymbol.Search
         route == "VoicemailSettingsFragment" || route == "PhoneAccountSelectionFragment" -> DialerSymbol.Voicemail
         action.contains("ACCESSIBILITY") -> DialerSymbol.Accessibility

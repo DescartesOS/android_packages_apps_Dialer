@@ -42,6 +42,7 @@ import com.android.dialer.R;
 import com.android.dialer.app.BaseActivity;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.compat.telephony.TelephonyManagerCompat;
+import com.android.dialer.expressive.CallStatsActivity;
 import com.android.dialer.expressive.QuickResponsesActivity;
 import com.android.dialer.lookup.LookupSettingsFragment;
 import com.android.dialer.util.PermissionsUtil;
@@ -186,6 +187,14 @@ public class DialerSettingsActivity extends BaseActivity implements
       callHistoryBackup.setFragment(CallHistoryBackupFragment.class.getName());
       callHistoryBackup.setIconSpaceReserved(false);
       getPreferenceScreen().addPreference(callHistoryBackup);
+
+      Preference callStatistics = new Preference(getContext());
+      callStatistics.setKey("call_statistics");
+      callStatistics.setTitle(R.string.call_statistics_title);
+      callStatistics.setSummary(R.string.call_statistics_summary);
+      callStatistics.setIntent(new Intent(requireContext(), CallStatsActivity.class));
+      callStatistics.setIconSpaceReserved(false);
+      getPreferenceScreen().addPreference(callStatistics);
     }
 
     @Override
