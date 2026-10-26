@@ -217,6 +217,7 @@
     <string name="expressive_speed_dial_change">Change shortcut</string>
     <string name="expressive_speed_dial_remove">Clear shortcut</string>
     <string name="expressive_speed_dial_assign_title">Set up shortcut %1$d</string>
+    <string name="expressive_call_controls_page">Call controls page %1$d of %2$d</string>
     <string name="expressive_speed_dial_contact_or_number">Find a person or enter a number</string>
     <string name="expressive_speed_dial_contacts_unavailable">Contacts are unavailable. Enter a number to save a shortcut.</string>
     <string name="expressive_speed_dial_use_number">Save number</string>

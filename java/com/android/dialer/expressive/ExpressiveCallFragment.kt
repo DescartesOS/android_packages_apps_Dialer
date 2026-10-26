@@ -49,6 +49,7 @@ import androidx.core.view.updateLayoutParams
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
@@ -293,8 +294,8 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         val buttons = if (roundedControls) ROUNDED_CONTROL_IDS
                                         else listOf(BUTTON_AUDIO, BUTTON_MUTE, BUTTON_DIALPAD, BUTTON_HOLD,
-                                            BUTTON_ADD_CALL, BUTTON_SWAP, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
-                                            BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM, BUTTON_RECORD_CALL,
+                                            BUTTON_ADD_CALL, BUTTON_RECORD_CALL, BUTTON_MERGE, BUTTON_UPGRADE_TO_VIDEO,
+                                            BUTTON_UPGRADE_TO_RTT, BUTTON_SWAP_SIM, BUTTON_SWAP,
                                             BUTTON_MANAGE_VOICE_CONFERENCE)
                                         val totalPages = { (buttons.size + CALL_CONTROLS_PER_PAGE - 1) /
                                             CALL_CONTROLS_PER_PAGE }
@@ -302,6 +303,28 @@ open class ExpressiveCallFragment : Fragment(), InCallScreen, InCallButtonUi, Au
                                         LaunchedEffect(totalPages()) {
                                             val lastPage = (totalPages() - 1).coerceAtLeast(0)
                                             if (pagerState.currentPage > lastPage) pagerState.scrollToPage(lastPage)
+                                        }
+                                        if (totalPages() > 1) {
+                                            Row(
+                                                Modifier.fillMaxWidth().alpha(.6f).semantics {
+                                                    contentDescription = getString(
+                                                        R.string.expressive_call_controls_page,
+                                                        pagerState.currentPage + 1,
+                                                        totalPages())
+                                                },
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                repeat(totalPages()) { index ->
+                                                    Box(
+                                                        Modifier.padding(horizontal = 4.dp).size(8.dp)
+                                                            .background(
+                                                                if (index == pagerState.currentPage)
+                                                                    MaterialTheme.colorScheme.primary
+                                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                CircleShape))
+                                                }
+                                            }
                                         }
                                         HorizontalPager(
                                             state = pagerState,
